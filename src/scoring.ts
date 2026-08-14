@@ -1,4 +1,4 @@
-import { dimensionQuestions, TOTAL_QUESTIONS, quickTestQuestionIds, QUICK_TEST_TOTAL, QUICK_TEST_PER_DIMENSION } from './questions';
+import { dimensionQuestions, TOTAL_QUESTIONS, quickTestQuestionIds, QUICK_TEST_TOTAL, getQuestionWeight } from './questions';
 import type {
   TestAnswers,
   DimensionScores,
@@ -13,19 +13,64 @@ import type {
   TestConsistency,
 } from './types';
 
+/** Round a weighted score to 2 decimal places (keeps URLs and display clean) */
+const roundScore = (value: number): number => Math.round(value * 100) / 100;
+
+/** Tolerance for treating a weighted score as an exact tie at the threshold */
+const TIE_EPSILON = 1e-9;
+
+/**
+ * Deterministic tie-breaker for a score landing exactly on the threshold.
+ * Examines the dimension's questions from highest to lowest weight and uses
+ * the first non-neutral answer. Falls back to 'left' only when every answer
+ * is neutral (i.e. the user genuinely provided no signal on this dimension).
+ */
+function breakTie(answers: TestAnswers | undefined, questionIds: readonly number[]): 'left' | 'right' {
+  if (answers) {
+    const byWeightDesc = [...questionIds].sort((a, b) => getQuestionWeight(b) - getQuestionWeight(a));
+    for (const qId of byWeightDesc) {
+      const answer = answers[qId] ?? 3;
+      if (answer > 3) return 'right';
+      if (answer < 3) return 'left';
+    }
+  }
+  return 'left';
+}
+
+/**
+ * Resolve a dimension letter from a weighted score.
+ * Exact ties (|score - threshold| <= TIE_EPSILON) are broken deterministically
+ * via breakTie instead of being silently assigned to the left pole.
+ */
+function resolvePreference(
+  score: number,
+  threshold: number,
+  questionIds: readonly number[],
+  answers: TestAnswers | undefined,
+  left: string,
+  right: string
+): string {
+  const diff = score - threshold;
+  if (Math.abs(diff) <= TIE_EPSILON) {
+    return breakTie(answers, questionIds) === 'right' ? right : left;
+  }
+  return diff > 0 ? right : left;
+}
+
 /**
  * Calculate dimension scores from test answers
- * Each dimension has 8 questions scored 1-5
- * Total range per dimension: 8-40
+ * Each dimension has 8 questions scored 1-5, weighted by discriminating power.
+ * Weights per dimension sum to 8.0, so the total range stays 8-40.
  */
 export function calculateScores(answers: TestAnswers): DimensionScores {
   const scores: DimensionScores = { EI: 0, SN: 0, TF: 0, JP: 0 };
 
   for (const [dimension, questionIds] of Object.entries(dimensionQuestions)) {
-    scores[dimension as keyof DimensionScores] = questionIds.reduce(
-      (sum, qId) => sum + (answers[qId] ?? 3), // Default to neutral (3) if missing
+    const raw = questionIds.reduce(
+      (sum, qId) => sum + (answers[qId] ?? 3) * getQuestionWeight(qId), // Default to neutral (3) if missing
       0
     );
+    scores[dimension as keyof DimensionScores] = roundScore(raw);
   }
 
   return scores;
@@ -43,14 +88,18 @@ export function calculateScores(answers: TestAnswers): DimensionScores {
  *       Left traits are F-oriented, right traits are T-oriented
  * - JP: Low (8-24) = Judging (J), High (25-40) = Perceiving (P)
  *       Left traits are J-oriented, right traits are P-oriented
+ * With weighted scoring an exact tie at 24 is practically unreachable; if it
+ * still happens (e.g. all-neutral answers), the tie is broken deterministically
+ * using the highest-weighted non-neutral answer instead of silently defaulting
+ * to the left pole. Pass `answers` to enable tie-breaking.
  */
-export function determineType(scores: DimensionScores): string {
-  const threshold = 24;
+export function determineType(scores: DimensionScores, answers?: TestAnswers): string {
+  const threshold = 24; // = 3 * 8.0 (question weights per dimension sum to 8.0)
 
-  const e_i = scores.EI > threshold ? 'I' : 'E';
-  const s_n = scores.SN > threshold ? 'N' : 'S';
-  const t_f = scores.TF > threshold ? 'T' : 'F';
-  const j_p = scores.JP > threshold ? 'P' : 'J';
+  const e_i = resolvePreference(scores.EI, threshold, dimensionQuestions.EI, answers, 'E', 'I');
+  const s_n = resolvePreference(scores.SN, threshold, dimensionQuestions.SN, answers, 'S', 'N');
+  const t_f = resolvePreference(scores.TF, threshold, dimensionQuestions.TF, answers, 'F', 'T');
+  const j_p = resolvePreference(scores.JP, threshold, dimensionQuestions.JP, answers, 'J', 'P');
 
   return `${e_i}${s_n}${t_f}${j_p}`;
 }
@@ -89,7 +138,7 @@ export function calculatePercentages(scores: DimensionScores): DimensionPercenta
  */
 export function generateResult(answers: TestAnswers): TestResult {
   const scores = calculateScores(answers);
-  const type = determineType(scores);
+  const type = determineType(scores, answers);
   const percentages = calculatePercentages(scores);
 
   return { type, scores, percentages };
@@ -108,53 +157,60 @@ export function isTestComplete(answers: TestAnswers, totalQuestions: number = TO
 
 /**
  * Calculate dimension scores from quick test answers
- * Each dimension has 2 questions scored 1-5
- * Total range per dimension: 2-10
+ * Each dimension has 2 questions scored 1-5, weighted by discriminating power.
+ * Score range per dimension: weightSum to 5 * weightSum.
  */
 export function calculateQuickScores(answers: TestAnswers): DimensionScores {
   const scores: DimensionScores = { EI: 0, SN: 0, TF: 0, JP: 0 };
 
   for (const [dimension, questionIds] of Object.entries(quickTestQuestionIds)) {
-    scores[dimension as keyof DimensionScores] = questionIds.reduce(
-      (sum, qId) => sum + (answers[qId] ?? 3), // Default to neutral (3) if missing
+    const raw = questionIds.reduce(
+      (sum, qId) => sum + (answers[qId] ?? 3) * getQuestionWeight(qId), // Default to neutral (3) if missing
       0
     );
+    scores[dimension as keyof DimensionScores] = roundScore(raw);
   }
 
   return scores;
 }
 
+/** Neutral (midpoint) score of a quick-test dimension, derived from its question weights */
+function getQuickThreshold(dimension: Dimension): number {
+  const weightSum = quickTestQuestionIds[dimension].reduce((sum, qId) => sum + getQuestionWeight(qId), 0);
+  return 3 * weightSum;
+}
+
 /**
  * Determine MBTI type from quick test dimension scores
- * Threshold adjusted for 2-10 range (midpoint = 6)
+ * Threshold per dimension = 3 * (sum of the 2 question weights).
+ * Ties are broken deterministically; pass `answers` to enable tie-breaking.
  */
-export function determineQuickType(scores: DimensionScores): string {
-  const threshold = 6; // Midpoint of 2-10 range
-
-  const e_i = scores.EI > threshold ? 'I' : 'E';
-  const s_n = scores.SN > threshold ? 'N' : 'S';
-  const t_f = scores.TF > threshold ? 'T' : 'F';
-  const j_p = scores.JP > threshold ? 'P' : 'J';
+export function determineQuickType(scores: DimensionScores, answers?: TestAnswers): string {
+  const e_i = resolvePreference(scores.EI, getQuickThreshold('EI'), quickTestQuestionIds.EI, answers, 'E', 'I');
+  const s_n = resolvePreference(scores.SN, getQuickThreshold('SN'), quickTestQuestionIds.SN, answers, 'S', 'N');
+  const t_f = resolvePreference(scores.TF, getQuickThreshold('TF'), quickTestQuestionIds.TF, answers, 'F', 'T');
+  const j_p = resolvePreference(scores.JP, getQuickThreshold('JP'), quickTestQuestionIds.JP, answers, 'J', 'P');
 
   return `${e_i}${s_n}${t_f}${j_p}`;
 }
 
 /**
  * Calculate percentage preference for each trait pole from quick test
- * Converts raw scores (2-10) to percentages (0-100)
+ * Maps each dimension's weighted score range to 0-100.
  */
 export function calculateQuickPercentages(scores: DimensionScores): DimensionPercentages {
-  const toRightPercentage = (score: number): number => {
-    // Convert 2-10 range to 0-100
-    // Score 2 = 0% right, Score 10 = 100% right
-    const normalized = ((score - 2) / 8) * 100;
-    return Math.round(normalized);
+  const toRightPercentage = (dimension: Dimension, score: number): number => {
+    const weightSum = quickTestQuestionIds[dimension].reduce((sum, qId) => sum + getQuestionWeight(qId), 0);
+    const min = weightSum; // All answers = 1
+    const max = 5 * weightSum; // All answers = 5
+    const normalized = ((score - min) / (max - min)) * 100;
+    return Math.min(100, Math.max(0, Math.round(normalized)));
   };
 
-  const eiRight = toRightPercentage(scores.EI); // I percentage
-  const snRight = toRightPercentage(scores.SN); // N percentage
-  const tfRight = toRightPercentage(scores.TF); // T percentage
-  const jpRight = toRightPercentage(scores.JP); // P percentage
+  const eiRight = toRightPercentage('EI', scores.EI); // I percentage
+  const snRight = toRightPercentage('SN', scores.SN); // N percentage
+  const tfRight = toRightPercentage('TF', scores.TF); // T percentage
+  const jpRight = toRightPercentage('JP', scores.JP); // P percentage
 
   return {
     E: 100 - eiRight,
@@ -173,7 +229,7 @@ export function calculateQuickPercentages(scores: DimensionScores): DimensionPer
  */
 export function generateQuickResult(answers: TestAnswers): TestResult {
   const scores = calculateQuickScores(answers);
-  const type = determineQuickType(scores);
+  const type = determineQuickType(scores, answers);
   const percentages = calculateQuickPercentages(scores);
 
   return { type, scores, percentages };
@@ -217,21 +273,24 @@ const dimensionPreferences: Record<Dimension, { left: string; right: string }> =
  */
 export function calculateDimensionScore(answers: TestAnswers, dimension: Dimension): number {
   const questionIds = dimensionQuestions[dimension];
-  return questionIds.reduce(
-    (sum, qId) => sum + (answers[qId] ?? 3), // Default to neutral (3) if missing
+  const raw = questionIds.reduce(
+    (sum, qId) => sum + (answers[qId] ?? 3) * getQuestionWeight(qId), // Default to neutral (3) if missing
     0
   );
+  return roundScore(raw);
 }
 
 /**
  * Determine dimension preference letter from score
- * @param score - Raw score 8-40
+ * Ties at the threshold are broken deterministically; pass `answers` to enable.
+ * @param score - Weighted score 8-40
  * @param dimension - Target dimension
+ * @param answers - Optional raw answers for tie-breaking
  * @returns Preference letter (E/I, S/N, F/T, J/P)
  */
-export function determineDimensionPreference(score: number, dimension: Dimension): string {
+export function determineDimensionPreference(score: number, dimension: Dimension, answers?: TestAnswers): string {
   const prefs = dimensionPreferences[dimension];
-  return score > DIMENSION_THRESHOLD ? prefs.right : prefs.left;
+  return resolvePreference(score, DIMENSION_THRESHOLD, dimensionQuestions[dimension], answers, prefs.left, prefs.right);
 }
 
 /**
@@ -256,7 +315,7 @@ export function calculateDimensionPercentages(score: number): { left: number; ri
  */
 export function generateDimensionResult(answers: TestAnswers, dimension: Dimension): SingleDimensionResult {
   const score = calculateDimensionScore(answers, dimension);
-  const preference = determineDimensionPreference(score, dimension);
+  const preference = determineDimensionPreference(score, dimension, answers);
   const { left, right } = calculateDimensionPercentages(score);
 
   return {

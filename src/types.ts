@@ -60,6 +60,14 @@ export interface BilingualText {
 export interface QuestionPair {
   id: number;
   dimension: Dimension;
+  /**
+   * Scoring weight — how strongly this question discriminates its dimension.
+   * Optional; defaults to 1 in scoring. For the OEJTS questions, weights within
+   * each dimension sum to exactly 8.0, so the dimension score range stays 8-40
+   * with a neutral midpoint of 24, while the non-uniform weights make an exact
+   * tie at the midpoint practically unreachable.
+   */
+  weight?: number;
   title?: BilingualText; // Optional question prompt to guide users
   leftTrait: BilingualText;
   rightTrait: BilingualText;

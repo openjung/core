@@ -29,6 +29,10 @@ export {
   quickTestQuestions,
   QUICK_TEST_TOTAL,
   QUICK_TEST_PER_DIMENSION,
+  // Question weights
+  questionWeights,
+  getQuestionWeight,
+  dimensionWeightSums,
 } from './questions';
 
 // Scoring functions
