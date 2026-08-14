@@ -7,54 +7,62 @@ import {
   isQuickTestComplete,
 } from './scoring';
 import type { TestAnswers, DimensionScores } from './types';
-import { quickTestQuestionIds, QUICK_TEST_TOTAL } from './questions';
+import { quickTestQuestionIds, QUICK_TEST_TOTAL, getQuestionWeight } from './questions';
+
+// Weight sums per quick-test dimension (EI: Q3+Q15, SN: Q24+Q32, TF: Q22+Q14, JP: Q9+Q13)
+const QUICK_WEIGHT_SUMS = {
+  EI: quickTestQuestionIds.EI.reduce((s, id) => s + getQuestionWeight(id), 0), // 2.4
+  SN: quickTestQuestionIds.SN.reduce((s, id) => s + getQuestionWeight(id), 0), // 2.4
+  TF: quickTestQuestionIds.TF.reduce((s, id) => s + getQuestionWeight(id), 0), // 2.3
+  JP: quickTestQuestionIds.JP.reduce((s, id) => s + getQuestionWeight(id), 0), // 2.25
+} as const;
 
 describe('calculateQuickScores', () => {
-  it('returns minimum scores (2) when all answers are 1', () => {
+  it('returns minimum scores when all answers are 1', () => {
     const answers: TestAnswers = {};
     // Quick test uses questions: EI[3,15], SN[24,32], TF[22,14], JP[9,13]
     Object.values(quickTestQuestionIds).flat().forEach((id) => {
       answers[id] = 1;
     });
     const scores = calculateQuickScores(answers);
-    expect(scores.EI).toBe(2);
-    expect(scores.SN).toBe(2);
-    expect(scores.TF).toBe(2);
-    expect(scores.JP).toBe(2);
+    expect(scores.EI).toBeCloseTo(QUICK_WEIGHT_SUMS.EI, 5); // 2.4
+    expect(scores.SN).toBeCloseTo(QUICK_WEIGHT_SUMS.SN, 5); // 2.4
+    expect(scores.TF).toBeCloseTo(QUICK_WEIGHT_SUMS.TF, 5); // 2.3
+    expect(scores.JP).toBeCloseTo(QUICK_WEIGHT_SUMS.JP, 5); // 2.25
   });
 
-  it('returns maximum scores (10) when all answers are 5', () => {
+  it('returns maximum scores when all answers are 5', () => {
     const answers: TestAnswers = {};
     Object.values(quickTestQuestionIds).flat().forEach((id) => {
       answers[id] = 5;
     });
     const scores = calculateQuickScores(answers);
-    expect(scores.EI).toBe(10);
-    expect(scores.SN).toBe(10);
-    expect(scores.TF).toBe(10);
-    expect(scores.JP).toBe(10);
+    expect(scores.EI).toBeCloseTo(5 * QUICK_WEIGHT_SUMS.EI, 5); // 12
+    expect(scores.SN).toBeCloseTo(5 * QUICK_WEIGHT_SUMS.SN, 5); // 12
+    expect(scores.TF).toBeCloseTo(5 * QUICK_WEIGHT_SUMS.TF, 5); // 11.5
+    expect(scores.JP).toBeCloseTo(5 * QUICK_WEIGHT_SUMS.JP, 5); // 11.25
   });
 
-  it('returns neutral scores (6) when all answers are 3', () => {
+  it('returns neutral scores when all answers are 3', () => {
     const answers: TestAnswers = {};
     Object.values(quickTestQuestionIds).flat().forEach((id) => {
       answers[id] = 3;
     });
     const scores = calculateQuickScores(answers);
-    expect(scores.EI).toBe(6);
-    expect(scores.SN).toBe(6);
-    expect(scores.TF).toBe(6);
-    expect(scores.JP).toBe(6);
+    expect(scores.EI).toBeCloseTo(3 * QUICK_WEIGHT_SUMS.EI, 5); // 7.2
+    expect(scores.SN).toBeCloseTo(3 * QUICK_WEIGHT_SUMS.SN, 5); // 7.2
+    expect(scores.TF).toBeCloseTo(3 * QUICK_WEIGHT_SUMS.TF, 5); // 6.9
+    expect(scores.JP).toBeCloseTo(3 * QUICK_WEIGHT_SUMS.JP, 5); // 6.75
   });
 
   it('defaults missing answers to neutral (3)', () => {
     const answers: TestAnswers = {};
     const scores = calculateQuickScores(answers);
-    // All defaults to 3, so 2 questions * 3 = 6 per dimension
-    expect(scores.EI).toBe(6);
-    expect(scores.SN).toBe(6);
-    expect(scores.TF).toBe(6);
-    expect(scores.JP).toBe(6);
+    // All defaults to 3, so 3 * weightSum per dimension
+    expect(scores.EI).toBeCloseTo(3 * QUICK_WEIGHT_SUMS.EI, 5);
+    expect(scores.SN).toBeCloseTo(3 * QUICK_WEIGHT_SUMS.SN, 5);
+    expect(scores.TF).toBeCloseTo(3 * QUICK_WEIGHT_SUMS.TF, 5);
+    expect(scores.JP).toBeCloseTo(3 * QUICK_WEIGHT_SUMS.JP, 5);
   });
 
   it('correctly calculates scores for mixed answers', () => {
@@ -77,10 +85,10 @@ describe('calculateQuickScores', () => {
     });
 
     const scores = calculateQuickScores(answers);
-    expect(scores.EI).toBe(2);  // 2 * 1 = 2
-    expect(scores.SN).toBe(10); // 2 * 5 = 10
-    expect(scores.TF).toBe(4);  // 2 * 2 = 4
-    expect(scores.JP).toBe(8);  // 2 * 4 = 8
+    expect(scores.EI).toBeCloseTo(1 * QUICK_WEIGHT_SUMS.EI, 5); // 2.4
+    expect(scores.SN).toBeCloseTo(5 * QUICK_WEIGHT_SUMS.SN, 5); // 12
+    expect(scores.TF).toBeCloseTo(2 * QUICK_WEIGHT_SUMS.TF, 5); // 4.6
+    expect(scores.JP).toBeCloseTo(4 * QUICK_WEIGHT_SUMS.JP, 5); // 9
   });
 
   it('only uses quick test question IDs', () => {
@@ -96,10 +104,10 @@ describe('calculateQuickScores', () => {
 
     const scores = calculateQuickScores(answers);
     // Should only use quick test questions (answered 1)
-    expect(scores.EI).toBe(2);
-    expect(scores.SN).toBe(2);
-    expect(scores.TF).toBe(2);
-    expect(scores.JP).toBe(2);
+    expect(scores.EI).toBeCloseTo(QUICK_WEIGHT_SUMS.EI, 5);
+    expect(scores.SN).toBeCloseTo(QUICK_WEIGHT_SUMS.SN, 5);
+    expect(scores.TF).toBeCloseTo(QUICK_WEIGHT_SUMS.TF, 5);
+    expect(scores.JP).toBeCloseTo(QUICK_WEIGHT_SUMS.JP, 5);
   });
 });
 
@@ -114,14 +122,32 @@ describe('determineQuickType', () => {
     expect(determineQuickType(scores)).toBe('INTP');
   });
 
-  it('returns ESFJ for threshold scores (6) - left preference', () => {
-    const scores: DimensionScores = { EI: 6, SN: 6, TF: 6, JP: 6 };
+  it('returns ESFJ for scores just below each threshold', () => {
+    // Thresholds: EI 7.2, SN 7.2, TF 6.9, JP 6.75
+    const scores: DimensionScores = { EI: 7.1, SN: 7.1, TF: 6.8, JP: 6.7 };
     expect(determineQuickType(scores)).toBe('ESFJ');
   });
 
-  it('returns INTP for scores just above threshold (7)', () => {
-    const scores: DimensionScores = { EI: 7, SN: 7, TF: 7, JP: 7 };
+  it('returns INTP for scores just above each threshold', () => {
+    const scores: DimensionScores = { EI: 7.3, SN: 7.3, TF: 7, JP: 6.8 };
     expect(determineQuickType(scores)).toBe('INTP');
+  });
+
+  it('breaks exact ties deterministically using the highest-weighted non-neutral answer', () => {
+    // EI: Q3 (weight 1.2) answered 4, Q15 (weight 1.2) answered 2 => score = 7.2 (exact tie).
+    // Tie-breaker looks at highest-weighted questions first: Q3 = 4 > 3 => right pole (I).
+    const scores: DimensionScores = { EI: 7.2, SN: 2.4, TF: 2.3, JP: 2.25 };
+    const answers: TestAnswers = { 3: 4, 15: 2, 24: 1, 32: 1, 22: 1, 14: 1, 9: 1, 13: 1 };
+    expect(determineQuickType(scores, answers)).toBe('ISFJ');
+  });
+
+  it('exact tie with all-neutral answers falls back to left pole', () => {
+    const scores: DimensionScores = { EI: 7.2, SN: 7.2, TF: 6.9, JP: 6.75 };
+    const answers: TestAnswers = {};
+    Object.values(quickTestQuestionIds).flat().forEach((id) => {
+      answers[id] = 3;
+    });
+    expect(determineQuickType(scores, answers)).toBe('ESFJ');
   });
 
   // Test all 16 MBTI types with quick test score ranges
@@ -152,8 +178,12 @@ describe('determineQuickType', () => {
 });
 
 describe('calculateQuickPercentages', () => {
-  it('returns 0% right / 100% left for minimum scores (2)', () => {
-    const scores: DimensionScores = { EI: 2, SN: 2, TF: 2, JP: 2 };
+  // Per-dimension score ranges: EI 2.4-12, SN 2.4-12, TF 2.3-11.5, JP 2.25-11.25
+  const MIN = { EI: 2.4, SN: 2.4, TF: 2.3, JP: 2.25 };
+  const MAX = { EI: 12, SN: 12, TF: 11.5, JP: 11.25 };
+
+  it('returns 0% right / 100% left for minimum scores', () => {
+    const scores: DimensionScores = { ...MIN };
     const percentages = calculateQuickPercentages(scores);
     // Left traits (E, S, F, J) should be 100%
     expect(percentages.E).toBe(100);
@@ -166,8 +196,8 @@ describe('calculateQuickPercentages', () => {
     expect(percentages.P).toBe(0);
   });
 
-  it('returns 100% right / 0% left for maximum scores (10)', () => {
-    const scores: DimensionScores = { EI: 10, SN: 10, TF: 10, JP: 10 };
+  it('returns 100% right / 0% left for maximum scores', () => {
+    const scores: DimensionScores = { ...MAX };
     const percentages = calculateQuickPercentages(scores);
     // Right traits (I, N, T, P) should be 100%
     expect(percentages.E).toBe(0);
@@ -180,8 +210,8 @@ describe('calculateQuickPercentages', () => {
     expect(percentages.P).toBe(100);
   });
 
-  it('returns 50% for neutral scores (6)', () => {
-    const scores: DimensionScores = { EI: 6, SN: 6, TF: 6, JP: 6 };
+  it('returns 50% for neutral (midpoint) scores', () => {
+    const scores: DimensionScores = { EI: 7.2, SN: 7.2, TF: 6.9, JP: 6.75 };
     const percentages = calculateQuickPercentages(scores);
     expect(percentages.E).toBe(50);
     expect(percentages.I).toBe(50);
@@ -194,11 +224,27 @@ describe('calculateQuickPercentages', () => {
   });
 
   it('correctly rounds percentages', () => {
-    // Score 3: (3-2)/8*100 = 12.5 -> rounds to 13%
-    const scores: DimensionScores = { EI: 3, SN: 3, TF: 3, JP: 3 };
+    // 25% right for each dimension
+    const scores: DimensionScores = {
+      EI: MIN.EI + 0.25 * (MAX.EI - MIN.EI), // 4.8
+      SN: MIN.SN + 0.25 * (MAX.SN - MIN.SN), // 4.8
+      TF: MIN.TF + 0.25 * (MAX.TF - MIN.TF), // 4.6
+      JP: MIN.JP + 0.25 * (MAX.JP - MIN.JP), // 4.5
+    };
     const percentages = calculateQuickPercentages(scores);
-    expect(percentages.I).toBe(13);
-    expect(percentages.E).toBe(87);
+    expect(percentages.I).toBe(25);
+    expect(percentages.E).toBe(75);
+  });
+
+  it('clamps out-of-range scores to 0-100%', () => {
+    const low: DimensionScores = { EI: 2, SN: 2, TF: 2, JP: 2 };
+    const high: DimensionScores = { EI: 15, SN: 15, TF: 15, JP: 15 };
+    const lowPct = calculateQuickPercentages(low);
+    const highPct = calculateQuickPercentages(high);
+    expect(lowPct.I).toBe(0);
+    expect(lowPct.E).toBe(100);
+    expect(highPct.I).toBe(100);
+    expect(highPct.E).toBe(0);
   });
 
   it('each pair sums to 100%', () => {
@@ -230,10 +276,10 @@ describe('generateQuickResult', () => {
     });
     const result = generateQuickResult(answers);
     expect(result.type).toBe('INTP');
-    expect(result.scores.EI).toBe(10);
-    expect(result.scores.SN).toBe(10);
-    expect(result.scores.TF).toBe(10);
-    expect(result.scores.JP).toBe(10);
+    expect(result.scores.EI).toBeCloseTo(12, 5);
+    expect(result.scores.SN).toBeCloseTo(12, 5);
+    expect(result.scores.TF).toBeCloseTo(11.5, 5);
+    expect(result.scores.JP).toBeCloseTo(11.25, 5);
   });
 
   it('percentages match scores correctly', () => {
@@ -256,10 +302,10 @@ describe('generateQuickResult', () => {
 
     const result = generateQuickResult(answers);
     expect(result.type).toBe('ENFP');
-    expect(result.scores.EI).toBe(4);  // E preference
-    expect(result.scores.SN).toBe(8);  // N preference
-    expect(result.scores.TF).toBe(4);  // F preference
-    expect(result.scores.JP).toBe(8);  // P preference
+    expect(result.scores.EI).toBeCloseTo(4.8, 5);  // E preference
+    expect(result.scores.SN).toBeCloseTo(9.6, 5);  // N preference
+    expect(result.scores.TF).toBeCloseTo(4.6, 5);  // F preference
+    expect(result.scores.JP).toBeCloseTo(9, 5);    // P preference
   });
 
   it('handles real-world ISTJ answers', () => {
@@ -272,10 +318,10 @@ describe('generateQuickResult', () => {
 
     const result = generateQuickResult(answers);
     expect(result.type).toBe('ISTJ');
-    expect(result.scores.EI).toBe(8);  // I preference
-    expect(result.scores.SN).toBe(4);  // S preference
-    expect(result.scores.TF).toBe(8);  // T preference
-    expect(result.scores.JP).toBe(4);  // J preference
+    expect(result.scores.EI).toBeCloseTo(9.6, 5);  // I preference
+    expect(result.scores.SN).toBeCloseTo(4.8, 5);  // S preference
+    expect(result.scores.TF).toBeCloseTo(9.2, 5);  // T preference
+    expect(result.scores.JP).toBeCloseTo(4.5, 5);  // J preference
   });
 });
 

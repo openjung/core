@@ -3,6 +3,8 @@ import {
   questions,
   sortedQuestions,
   dimensionQuestions,
+  dimensionWeightSums,
+  getQuestionWeight,
   TOTAL_QUESTIONS,
   QUESTIONS_PER_DIMENSION,
 } from './questions';
@@ -171,5 +173,27 @@ describe('constants', () => {
 
   it('4 dimensions * 8 questions = 32 total', () => {
     expect(4 * QUESTIONS_PER_DIMENSION).toBe(TOTAL_QUESTIONS);
+  });
+});
+
+describe('question weights', () => {
+  it('every OEJTS question has an explicit weight', () => {
+    for (const q of questions) {
+      expect(q.weight).toBeDefined();
+      expect(q.weight).toBeGreaterThan(0);
+    }
+  });
+
+  it('weights within each dimension sum to 8.0 (score range stays 8-40)', () => {
+    for (const dimension of ['EI', 'SN', 'TF', 'JP'] as Dimension[]) {
+      expect(dimensionWeightSums[dimension]).toBeCloseTo(8.0, 10);
+    }
+  });
+
+  it('dimensionWeightSums matches a direct lookup of the question weights', () => {
+    for (const dimension of ['EI', 'SN', 'TF', 'JP'] as Dimension[]) {
+      const sum = dimensionQuestions[dimension].reduce((s, id) => s + getQuestionWeight(id), 0);
+      expect(sum).toBeCloseTo(dimensionWeightSums[dimension], 10);
+    }
   });
 });

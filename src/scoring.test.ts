@@ -161,6 +161,42 @@ describe('determineType', () => {
       expect(determineType(scores)).toBe(expected);
     });
   });
+
+  it('breaks an exact tie at 24 using the highest-weighted non-neutral answer (right)', () => {
+    // EI weights: Q3=1.2, Q7=0.7, Q11=1.1, Q15=1.2, Q19=1.1, Q23=1.1, Q27=0.7, Q31=0.9
+    // All 3s = 24; Q7=5 adds +1.4, Q27=1 removes -1.4 => still exactly 24.
+    // Highest-weighted questions are all neutral, so Q7 (5 > 3) decides => right pole (I).
+    const answers: TestAnswers = {};
+    for (let i = 1; i <= 32; i++) answers[i] = 3;
+    answers[7] = 5;
+    answers[27] = 1;
+
+    const scores = calculateScores(answers);
+    expect(scores.EI).toBe(24);
+    expect(determineType(scores, answers)).toBe('ISFJ');
+  });
+
+  it('breaks an exact tie at 24 using the highest-weighted non-neutral answer (left)', () => {
+    // Mirror case: Q7=1 (-1.4), Q27=5 (+1.4) => still exactly 24.
+    // Q7 (1 < 3) is checked before Q27 (same weight, earlier in dimension order) => left pole (E).
+    const answers: TestAnswers = {};
+    for (let i = 1; i <= 32; i++) answers[i] = 3;
+    answers[7] = 1;
+    answers[27] = 5;
+
+    const scores = calculateScores(answers);
+    expect(scores.EI).toBe(24);
+    expect(determineType(scores, answers)).toBe('ESFJ');
+  });
+
+  it('exact tie with all-neutral answers falls back to left pole', () => {
+    const answers: TestAnswers = {};
+    for (let i = 1; i <= 32; i++) answers[i] = 3;
+
+    const scores = calculateScores(answers);
+    expect(scores.EI).toBe(24);
+    expect(determineType(scores, answers)).toBe('ESFJ');
+  });
 });
 
 describe('calculatePercentages', () => {
