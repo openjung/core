@@ -1,4 +1,5 @@
 import type { QuestionPair, DimensionQuestions } from './types';
+import { questionTranslations } from './questionTranslations';
 
 /**
  * OEJTS 1.2 - 32 Questions
@@ -242,6 +243,17 @@ export const questions: QuestionPair[] = [
     rightTrait: { en: 'Likes to know "why"', zh: '想知道"为什么"', ja: '「なぜ」', ko: '"왜"를 알고 싶다', 'zh-tw': '想知道「為什麼」' },
   },
 ];
+
+// Extend the same exported objects by stable ID. No English fallback is used here.
+// Keep the original five languages, question order and scoring metadata untouched.
+for (const [locale, translations] of Object.entries(questionTranslations)) {
+  for (const question of questions) {
+    const [title, leftTrait, rightTrait] = translations[question.id];
+    question.title![locale] = title;
+    question.leftTrait[locale] = leftTrait;
+    question.rightTrait[locale] = rightTrait;
+  }
+}
 
 // Question IDs grouped by dimension for scoring
 export const dimensionQuestions: DimensionQuestions = {

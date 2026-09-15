@@ -49,6 +49,7 @@ export interface SingleDimensionResult {
 
 // Multilingual text (en is required, others optional for fallback)
 export interface BilingualText {
+  [locale: string]: string | undefined;
   en: string;
   zh?: string;
   ja?: string;
