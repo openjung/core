@@ -68,10 +68,12 @@ if (isTestComplete(answers)) {
 - `DimensionScores` - Raw scores for EI, SN, TF, JP dimensions
 - `DimensionPercentages` - Percentage for each trait pole
 - `QuestionPair` - Question with bipolar traits
-- `BilingualText` - Multilingual text (en, zh, ja, ko, zh-tw)
+- `BilingualText` - Multilingual text (`en` required, other locale keys optional)
 - `Dimension` - Dimension type ('EI' | 'SN' | 'TF' | 'JP')
 
 ## Question Format
+
+The question bank has 44 complete locales. The 39 added locales are AI-assisted drafts, not documented human-reviewed or validated language versions. See [the translation record](TRANSLATIONS.md) for sources, licensing, unchanged contracts and native-speaker review priorities.
 
 Each question is a bipolar trait pair:
 
@@ -111,4 +113,4 @@ This skill provides:
 
 ## License
 
-MIT
+Original code: MIT. OEJTS questionnaire items and adaptations, including translations and subsets: [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/), by Eric Jorgenson / Open Psychometrics. See [the translation record](TRANSLATIONS.md) and [original questionnaire](https://openpsychometrics.org/tests/OJTS/development/OEJTS1.2.pdf).

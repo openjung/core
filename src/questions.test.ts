@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { createHash } from 'node:crypto';
 import {
   questions,
   sortedQuestions,
@@ -6,7 +7,53 @@ import {
   TOTAL_QUESTIONS,
   QUESTIONS_PER_DIMENSION,
 } from './questions';
+import { questionTranslations } from './questionTranslations';
+import { generateResult } from './scoring';
 import type { Dimension } from './types';
+
+// Independent release contract, not derived from the data being checked.
+const originalLanguages = ['en', 'zh', 'ja', 'ko', 'zh-tw'];
+const addedLanguages = [
+  'ms',
+  'de',
+  'fr',
+  'es',
+  'ar',
+  'he',
+  'ru',
+  'pt-br',
+  'id',
+  'vi',
+  'th',
+  'tr',
+  'it',
+  'pl',
+  'nl',
+  'hi',
+  'bn',
+  'fil',
+  'uk',
+  'sw',
+  'cs',
+  'ro',
+  'hu',
+  'sk',
+  'el',
+  'sv',
+  'no',
+  'da',
+  'fi',
+  'my',
+  'km',
+  'lo',
+  'si',
+  'ta',
+  'am',
+  'ha',
+  'yo',
+  'zu',
+  'ig',
+];
 
 describe('questions data integrity', () => {
   it('has exactly 32 questions', () => {
@@ -36,16 +83,70 @@ describe('questions data integrity', () => {
     });
   });
 
-  it('each question has all 5 language translations', () => {
-    const languages = ['en', 'zh', 'ja', 'ko', 'zh-tw'] as const;
-    questions.forEach((q) => {
-      languages.forEach((lang) => {
-        expect(q.leftTrait[lang]).toBeDefined();
-        expect(q.leftTrait[lang]!.length).toBeGreaterThan(0);
-        expect(q.rightTrait[lang]).toBeDefined();
-        expect(q.rightTrait[lang]!.length).toBeGreaterThan(0);
-      });
-    });
+  it.each([...originalLanguages, ...addedLanguages])(
+    '%s has all 32 titles and both poles without fallback',
+    (locale) => {
+      for (const question of questions) {
+        for (const field of ['title', 'leftTrait', 'rightTrait'] as const) {
+          const text = question[field]!;
+          expect(
+            Object.prototype.hasOwnProperty.call(text, locale),
+            `${question.id}.${field}.${locale}`
+          ).toBe(true);
+          expect(text[locale]?.trim().length).toBeGreaterThan(0);
+          if (locale !== 'en') expect(text[locale]).not.toBe(text.en);
+        }
+        expect(question.leftTrait[locale]).not.toBe(question.rightTrait[locale]);
+      }
+    }
+  );
+
+  it('contains exactly the 39 added locales and explicitly keyed triples for IDs 1–32', () => {
+    expect(Object.keys(questionTranslations)).toEqual(addedLanguages);
+    for (const translations of Object.values(questionTranslations)) {
+      expect(Object.keys(translations).map(Number)).toEqual(
+        Array.from({ length: 32 }, (_, i) => i + 1)
+      );
+      for (const triple of Object.values(translations)) expect(triple).toHaveLength(3);
+    }
+  });
+
+  it('preserves the original five-language text, array order, IDs and dimensions byte for byte', () => {
+    const original = questions.map((q) => [
+      q.id,
+      q.dimension,
+      ...originalLanguages.flatMap((locale) => [
+        q.title![locale],
+        q.leftTrait[locale],
+        q.rightTrait[locale],
+      ]),
+    ]);
+    // Captured before expansion from core f56d3e1, not regenerated from new translations.
+    expect(createHash('sha256').update(JSON.stringify(original)).digest('hex')).toBe(
+      'b9fedaa050ef561cf352fdcb17aa2fb121f209a32e132094dae98084cea53a65'
+    );
+  });
+
+  it('keeps every ID on its original dimension and score 1/5 on the original left/right poles', () => {
+    const assignments: [Dimension, number[], string][] = [
+      ['JP', [1, 5, 9, 13, 17, 21, 25, 29], 'ESFP'],
+      ['TF', [2, 6, 10, 14, 18, 22, 26, 30], 'ESTJ'],
+      ['EI', [3, 7, 11, 15, 19, 23, 27, 31], 'ISFJ'],
+      ['SN', [4, 8, 12, 16, 20, 24, 28, 32], 'ENFJ'],
+    ];
+    for (const [dimension, ids, rightType] of assignments) {
+      expect(dimensionQuestions[dimension]).toEqual(ids);
+      for (const id of ids) {
+        expect(questions.find((q) => q.id === id)?.dimension).toBe(dimension);
+        // Other answers stay neutral: changing ONE item must affect only its own dimension.
+        const left = generateResult({ [id]: 1 });
+        const right = generateResult({ [id]: 5 });
+        expect(left.scores).toEqual({ EI: 24, SN: 24, TF: 24, JP: 24, [dimension]: 22 });
+        expect(right.scores).toEqual({ EI: 24, SN: 24, TF: 24, JP: 24, [dimension]: 26 });
+        expect(left.type).toBe('ESFJ');
+        expect(right.type).toBe(rightType);
+      }
+    }
   });
 
   it('each question has a valid dimension', () => {
