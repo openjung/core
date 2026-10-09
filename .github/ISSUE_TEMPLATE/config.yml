@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: openjung.org website
+    url: https://openjung.org
+    about: Try the test, or report a problem with the site itself.
+  - name: OEJTS source instrument
+    url: https://openpsychometrics.org/tests/OEJTS/
+    about: The original Open Extended Jungian Type Scales by Open Psychometrics.

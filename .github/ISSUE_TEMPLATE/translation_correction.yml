@@ -1,0 +1,61 @@
+name: Translation correction
+description: Propose better wording for a question in one locale. Please do not include your own answers or results.
+labels: [translation]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you. 39 of the 44 locales are AI-assisted drafts that have not had native-speaker review,
+        so corrections are very welcome. See TRANSLATIONS.md for the known review priorities.
+        Changing the **direction** of a pair (which side scores 1 and which scores 5) is a scoring change,
+        not a translation fix; please open a bug report for that instead.
+  - type: input
+    id: locale
+    attributes:
+      label: Locale
+      description: The locale code as used in the package, e.g. `de`, `pt-br`, `zh-tw`.
+    validations:
+      required: true
+  - type: input
+    id: question
+    attributes:
+      label: Question ID
+      description: 1–32 for the OEJTS questions, or "PurrJung 1–16" for the cat test.
+    validations:
+      required: true
+  - type: dropdown
+    id: field
+    attributes:
+      label: Field
+      options:
+        - title
+        - leftTrait
+        - rightTrait
+    validations:
+      required: true
+  - type: textarea
+    id: current
+    attributes:
+      label: Current wording
+    validations:
+      required: true
+  - type: textarea
+    id: proposed
+    attributes:
+      label: Proposed wording
+    validations:
+      required: true
+  - type: textarea
+    id: reason
+    attributes:
+      label: Why is the new wording better?
+      description: Register, idiom, ambiguity, cultural fit, gendered address, reading level, etc.
+    validations:
+      required: true
+  - type: checkboxes
+    id: speaker
+    attributes:
+      label: Your relationship to this language
+      options:
+        - label: I am a native or fluent speaker of this locale.
+        - label: I compared the proposal against the English source text.
