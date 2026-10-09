@@ -1,0 +1,26 @@
+Questionnaire content license
+=============================
+
+This repository contains two kinds of material under two licenses.
+
+1. Code (everything that is not questionnaire text) is licensed under the MIT
+   License in the LICENSE file.
+
+2. The OEJTS questionnaire items and every adaptation of them, including the
+   English prompts, the left/right trait wording, the quick-test subset and all
+   44 locales in src/questions.ts and src/questionTranslations.ts, are derived
+   from the Open Extended Jungian Type Scales 1.2 by Eric Jorgenson /
+   Open Psychometrics and are licensed under
+
+       Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International
+       https://creativecommons.org/licenses/by-nc-sa/4.0/
+
+   Source: https://openpsychometrics.org/tests/OJTS/development/OEJTS1.2.pdf
+
+   The MIT license on the code does not override the attribution,
+   noncommercial and share-alike terms that apply to this content. If you ship
+   the questions, keep the attribution and these terms. See TRANSLATIONS.md
+   for provenance and the review status of each locale.
+
+The PurrJung cat questions in src/purrjungQuestions.ts are original OpenJung
+content and are not derived from the OEJTS text.

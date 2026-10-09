@@ -21,23 +21,27 @@ interface TestAnswers {
 
 // Dimension raw scores
 interface DimensionScores {
-  EI: number;  // 8-40
-  SN: number;  // 8-40
-  TF: number;  // 8-40
-  JP: number;  // 8-40
+  EI: number; // 8-40
+  SN: number; // 8-40
+  TF: number; // 8-40
+  JP: number; // 8-40
 }
 
 // Percentage breakdown
 interface DimensionPercentages {
-  E: number; I: number;  // sum to 100
-  S: number; N: number;  // sum to 100
-  T: number; F: number;  // sum to 100
-  J: number; P: number;  // sum to 100
+  E: number;
+  I: number; // sum to 100
+  S: number;
+  N: number; // sum to 100
+  T: number;
+  F: number; // sum to 100
+  J: number;
+  P: number; // sum to 100
 }
 
 // Complete test result
 interface TestResult {
-  type: string;                    // "ENFP", "INTJ", etc.
+  type: string; // "ENFP", "INTJ", etc.
   scores: DimensionScores;
   percentages: DimensionPercentages;
 }
@@ -60,9 +64,9 @@ interface ApiResult extends TestResult {
 interface Question {
   id: number;
   dimension: 'EI' | 'SN' | 'TF' | 'JP';
-  title?: string;        // Optional guidance text
-  leftTrait: string;     // Left option (score 1)
-  rightTrait: string;    // Right option (score 5)
+  title?: string; // Optional guidance text
+  leftTrait: string; // Left option (score 1)
+  rightTrait: string; // Right option (score 5)
 }
 
 // Confidence metrics
@@ -71,8 +75,8 @@ type ConfidenceLevel = 'strong' | 'moderate' | 'slight' | 'balanced';
 interface DimensionConfidence {
   dimension: 'EI' | 'SN' | 'TF' | 'JP';
   level: ConfidenceLevel;
-  distance: number;      // Distance from threshold (24)
-  percentage: number;    // 0-100 confidence
+  distance: number; // Distance from threshold (24)
+  percentage: number; // 0-100 confidence
 }
 ```
 
@@ -85,15 +89,18 @@ interface DimensionConfidence {
 **Purpose**: Retrieve all 32 OEJTS test questions
 
 **Query Parameters:**
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| locale | string | "en" | Language code for localized text |
+
+| Parameter | Type   | Default | Description                      |
+| --------- | ------ | ------- | -------------------------------- |
+| locale    | string | "en"    | Language code for localized text |
 
 **Headers:**
+
 - `Access-Control-Allow-Origin: *` (CORS enabled)
 - `Cache-Control: public, max-age=86400` (24h cache)
 
 **Success Response (200):**
+
 ```json
 {
   "totalQuestions": 32,
@@ -121,6 +128,7 @@ interface DimensionConfidence {
 **Purpose**: Calculate personality type from submitted answers
 
 **Request Body:**
+
 ```typescript
 {
   answers: Record<string, number>;  // Required: all 32 answers
@@ -130,11 +138,13 @@ interface DimensionConfidence {
 ```
 
 **Validation Rules:**
+
 - All 32 questions must be answered
 - Answer values must be integers 1-5
 - Answer keys must be string numbers "1" through "32"
 
 **Success Response (200):**
+
 ```json
 {
   "result": {
@@ -181,6 +191,7 @@ interface DimensionConfidence {
 ```
 
 **Error Response (400):**
+
 ```json
 {
   "error": "INCOMPLETE_ANSWERS",
@@ -196,6 +207,7 @@ interface DimensionConfidence {
 **Purpose**: Record a completed test result (analytics, non-blocking)
 
 **Request Body:**
+
 ```typescript
 {
   answers: Record<string, number>;
@@ -209,6 +221,7 @@ interface DimensionConfidence {
 ```
 
 **Success Response (201):**
+
 ```json
 {
   "success": true,
@@ -223,9 +236,11 @@ interface DimensionConfidence {
 **Purpose**: Retrieve aggregate test statistics
 
 **Headers:**
+
 - `Cache-Control: public, max-age=300` (5min cache)
 
 **Success Response (200):**
+
 ```json
 {
   "totalTests": 15234,
@@ -238,9 +253,7 @@ interface DimensionConfidence {
     { "locale": "en", "count": 8234 },
     { "locale": "zh", "count": 4123 }
   ],
-  "recentTrend": [
-    { "date": "2026-01-01", "count": 234 }
-  ],
+  "recentTrend": [{ "date": "2026-01-01", "count": 234 }],
   "lastUpdated": "2026-01-28T12:34:56Z"
 }
 ```
@@ -257,7 +270,7 @@ const dimensionQuestions = {
   EI: [3, 7, 11, 15, 19, 23, 27, 31],
   SN: [4, 8, 12, 16, 20, 24, 28, 32],
   TF: [2, 6, 10, 14, 18, 22, 26, 30],
-  JP: [1, 5, 9, 13, 17, 21, 25, 29]
+  JP: [1, 5, 9, 13, 17, 21, 25, 29],
 };
 
 function calculateScores(answers: TestAnswers): DimensionScores {
@@ -278,8 +291,8 @@ function determineType(scores: DimensionScores): string {
   return [
     scores.EI <= THRESHOLD ? 'E' : 'I',
     scores.SN <= THRESHOLD ? 'S' : 'N',
-    scores.TF <= THRESHOLD ? 'F' : 'T',  // Note: TF inverted
-    scores.JP <= THRESHOLD ? 'J' : 'P'
+    scores.TF <= THRESHOLD ? 'F' : 'T', // Note: TF inverted
+    scores.JP <= THRESHOLD ? 'J' : 'P',
   ].join('');
 }
 ```
@@ -298,7 +311,7 @@ function calculatePercentages(scores: DimensionScores): DimensionPercentages {
     T: toPercent(scores.TF),
     F: 100 - toPercent(scores.TF),
     P: toPercent(scores.JP),
-    J: 100 - toPercent(scores.JP)
+    J: 100 - toPercent(scores.JP),
   };
 }
 ```
@@ -308,18 +321,21 @@ function calculatePercentages(scores: DimensionScores): DimensionPercentages {
 ## Test Modes
 
 ### Full Test (32 Questions)
+
 - Default mode
 - All 32 OEJTS questions
 - Most accurate results
 - Score range: 8-40 per dimension
 
 ### Quick Test (8 Questions)
+
 - 2 questions per dimension
 - Selected questions: [3, 15, 24, 32, 22, 14, 9, 13]
 - Score range: 2-10 per dimension
 - Threshold: 6
 
 ### Dimension Test (8 Questions)
+
 - Single dimension focus
 - 8 questions for selected dimension only
 - Returns single dimension result
@@ -328,40 +344,40 @@ function calculatePercentages(scores: DimensionScores): DimensionPercentages {
 
 ## All 32 Questions
 
-| ID | Dim | Left Trait | Right Trait |
-|----|-----|------------|-------------|
-| 1 | JP | Makes lists | Relies on memory |
-| 2 | TF | Skeptical | Wants to believe |
-| 3 | EI | Bored by time alone | Needs time alone |
-| 4 | SN | Accepts things as they are | Unsatisfied with the status quo |
-| 5 | JP | Keeps a clean room | Tolerates a messy room |
-| 6 | TF | Thinks "robotic" is an insult | Thinks "robotic" is a compliment |
-| 7 | EI | Energized by interaction | Drained by interaction |
-| 8 | SN | Prefers routine tasks | Prefers new challenges |
-| 9 | JP | Plans social events ahead | Goes with the flow |
-| 10 | TF | Sentimental | Unsentimental |
-| 11 | EI | Comfortable in groups | Uncomfortable in groups |
-| 12 | SN | Focuses on details | Focuses on big picture |
-| 13 | JP | Prepares for meetings | Wings it |
-| 14 | TF | Tenderhearted | Tough-minded |
-| 15 | EI | Initiates conversations | Waits to be approached |
-| 16 | SN | Works with facts | Works with ideas |
-| 17 | JP | Finishes tasks early | Finishes at deadline |
-| 18 | TF | Values harmony | Values truth |
-| 19 | EI | Thinks out loud | Thinks inside head |
-| 20 | SN | Trusts experience | Trusts intuition |
-| 21 | JP | Follows schedules | Follows impulses |
-| 22 | TF | Empathetic | Analytical |
-| 23 | EI | Joins group activities | Prefers one-on-one |
-| 24 | SN | Practical | Theoretical |
-| 25 | JP | Organized workspace | Creative chaos |
-| 26 | TF | Decides with heart | Decides with head |
-| 27 | EI | Outgoing | Reserved |
-| 28 | SN | Concrete | Abstract |
-| 29 | JP | Punctual | Flexible with time |
-| 30 | TF | Personal approach | Impersonal approach |
-| 31 | EI | Party animal | Homebody |
-| 32 | SN | Realistic | Imaginative |
+| ID  | Dim | Left Trait                    | Right Trait                      |
+| --- | --- | ----------------------------- | -------------------------------- |
+| 1   | JP  | Makes lists                   | Relies on memory                 |
+| 2   | TF  | Skeptical                     | Wants to believe                 |
+| 3   | EI  | Bored by time alone           | Needs time alone                 |
+| 4   | SN  | Accepts things as they are    | Unsatisfied with the status quo  |
+| 5   | JP  | Keeps a clean room            | Tolerates a messy room           |
+| 6   | TF  | Thinks "robotic" is an insult | Thinks "robotic" is a compliment |
+| 7   | EI  | Energized by interaction      | Drained by interaction           |
+| 8   | SN  | Prefers routine tasks         | Prefers new challenges           |
+| 9   | JP  | Plans social events ahead     | Goes with the flow               |
+| 10  | TF  | Sentimental                   | Unsentimental                    |
+| 11  | EI  | Comfortable in groups         | Uncomfortable in groups          |
+| 12  | SN  | Focuses on details            | Focuses on big picture           |
+| 13  | JP  | Prepares for meetings         | Wings it                         |
+| 14  | TF  | Tenderhearted                 | Tough-minded                     |
+| 15  | EI  | Initiates conversations       | Waits to be approached           |
+| 16  | SN  | Works with facts              | Works with ideas                 |
+| 17  | JP  | Finishes tasks early          | Finishes at deadline             |
+| 18  | TF  | Values harmony                | Values truth                     |
+| 19  | EI  | Thinks out loud               | Thinks inside head               |
+| 20  | SN  | Trusts experience             | Trusts intuition                 |
+| 21  | JP  | Follows schedules             | Follows impulses                 |
+| 22  | TF  | Empathetic                    | Analytical                       |
+| 23  | EI  | Joins group activities        | Prefers one-on-one               |
+| 24  | SN  | Practical                     | Theoretical                      |
+| 25  | JP  | Organized workspace           | Creative chaos                   |
+| 26  | TF  | Decides with heart            | Decides with head                |
+| 27  | EI  | Outgoing                      | Reserved                         |
+| 28  | SN  | Concrete                      | Abstract                         |
+| 29  | JP  | Punctual                      | Flexible with time               |
+| 30  | TF  | Personal approach             | Impersonal approach              |
+| 31  | EI  | Party animal                  | Homebody                         |
+| 32  | SN  | Realistic                     | Imaginative                      |
 
 ---
 
@@ -379,19 +395,19 @@ function PersonalityTest() {
 
   useEffect(() => {
     fetch('https://openjung.org/api/questions')
-      .then(r => r.json())
-      .then(data => setQuestions(data.questions));
+      .then((r) => r.json())
+      .then((data) => setQuestions(data.questions));
   }, []);
 
   const handleAnswer = (questionId, value) => {
-    setAnswers(prev => ({ ...prev, [questionId]: value }));
+    setAnswers((prev) => ({ ...prev, [questionId]: value }));
   };
 
   const submit = async () => {
     const response = await fetch('https://openjung.org/api/calculate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ answers })
+      body: JSON.stringify({ answers }),
     });
     const data = await response.json();
     setResult(data.result);
@@ -403,10 +419,12 @@ function PersonalityTest() {
 
   return (
     <div>
-      {questions.map(q => (
+      {questions.map((q) => (
         <div key={q.id}>
-          <p>{q.leftTrait} ← → {q.rightTrait}</p>
-          {[1, 2, 3, 4, 5].map(v => (
+          <p>
+            {q.leftTrait} ← → {q.rightTrait}
+          </p>
+          {[1, 2, 3, 4, 5].map((v) => (
             <button
               key={v}
               onClick={() => handleAnswer(q.id, v)}
@@ -467,27 +485,27 @@ curl "https://openjung.org/api/stats"
 
 ## Supported Locales
 
-| Code | Language | Code | Language |
-|------|----------|------|----------|
-| en | English | ko | Korean |
-| zh | Simplified Chinese | es | Spanish |
-| zh-tw | Traditional Chinese | fr | French |
-| ja | Japanese | de | German |
-| pt | Portuguese | ru | Russian |
-| hi | Hindi | bn | Bengali |
-| fil | Filipino | uk | Ukrainian |
-| sw | Swahili | cs | Czech |
-| ro | Romanian | hu | Hungarian |
-| sk | Slovak | el | Greek |
-| sv | Swedish | no | Norwegian |
-| da | Danish | fi | Finnish |
-| ms | Malay | km | Khmer |
-| lo | Lao | si | Sinhala |
-| ta | Tamil | am | Amharic |
-| ha | Hausa | yo | Yoruba |
-| zu | Zulu | ig | Igbo |
-| ar | Arabic | he | Hebrew |
-| th | Thai | vi | Vietnamese |
-| id | Indonesian | tr | Turkish |
-| pl | Polish | nl | Dutch |
-| it | Italian | ... | 44+ total |
+| Code  | Language            | Code | Language   |
+| ----- | ------------------- | ---- | ---------- |
+| en    | English             | ko   | Korean     |
+| zh    | Simplified Chinese  | es   | Spanish    |
+| zh-tw | Traditional Chinese | fr   | French     |
+| ja    | Japanese            | de   | German     |
+| pt    | Portuguese          | ru   | Russian    |
+| hi    | Hindi               | bn   | Bengali    |
+| fil   | Filipino            | uk   | Ukrainian  |
+| sw    | Swahili             | cs   | Czech      |
+| ro    | Romanian            | hu   | Hungarian  |
+| sk    | Slovak              | el   | Greek      |
+| sv    | Swedish             | no   | Norwegian  |
+| da    | Danish              | fi   | Finnish    |
+| ms    | Malay               | km   | Khmer      |
+| lo    | Lao                 | si   | Sinhala    |
+| ta    | Tamil               | am   | Amharic    |
+| ha    | Hausa               | yo   | Yoruba     |
+| zu    | Zulu                | ig   | Igbo       |
+| ar    | Arabic              | he   | Hebrew     |
+| th    | Thai                | vi   | Vietnamese |
+| id    | Indonesian          | tr   | Turkish    |
+| pl    | Polish              | nl   | Dutch      |
+| it    | Italian             | ...  | 44+ total  |
