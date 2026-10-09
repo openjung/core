@@ -6,10 +6,10 @@ import {
   dimensionQuestions,
   TOTAL_QUESTIONS,
   QUESTIONS_PER_DIMENSION,
-} from './questions';
-import { questionTranslations } from './questionTranslations';
-import { generateResult } from './scoring';
-import type { Dimension } from './types';
+} from './questions.js';
+import { questionTranslations } from './questionTranslations.js';
+import { generateResult } from './scoring.js';
+import type { Dimension } from './types.js';
 
 // Independent release contract, not derived from the data being checked.
 const originalLanguages = ['en', 'zh', 'ja', 'ko', 'zh-tw'];

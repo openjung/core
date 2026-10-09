@@ -1,39 +1,56 @@
 {
   "name": "@openjung/core",
   "version": "1.0.1",
-  "description": "Core OEJTS (Open Extended Jungian Type Scales) MBTI personality test questions and scoring logic",
+  "description": "Questions, scoring and i18n for the Open Extended Jungian Type Scales (OEJTS) personality test. Zero dependencies, TypeScript, 44 locales.",
   "type": "module",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
+      "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
-      "types": "./dist/index.d.ts"
-    }
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
   },
+  "sideEffects": false,
   "files": [
     "dist",
     "src",
-    "TRANSLATIONS.md"
+    "!src/**/*.test.ts",
+    "TRANSLATIONS.md",
+    "LICENSE-DATA"
   ],
+  "engines": {
+    "node": ">=18"
+  },
   "scripts": {
-    "build": "tsc",
-    "dev": "tsc --watch",
+    "build": "tsc -p tsconfig.build.json",
+    "clean": "rm -rf dist",
+    "dev": "tsc -p tsconfig.build.json --watch",
+    "typecheck": "tsc --noEmit",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "prepublishOnly": "npm run build"
+    "check:package": "publint && attw --pack . --profile esm-only",
+    "check": "npm run typecheck && npm run format:check && npm test && npm run build && npm run check:package",
+    "prepublishOnly": "npm run clean && npm run check"
   },
   "keywords": [
     "mbti",
     "oejts",
     "openjung",
     "personality",
+    "personality-test",
     "psychology",
-    "test",
+    "psychometrics",
     "jung",
-    "jungian"
+    "jungian",
+    "i18n",
+    "typescript"
   ],
   "author": "ya-luotao <luotao@hey.com>",
   "license": "MIT",
@@ -45,8 +62,16 @@
     "url": "https://github.com/openjung/core/issues"
   },
   "homepage": "https://openjung.org",
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
   "devDependencies": {
-    "typescript": "^5.7.0",
+    "@arethetypeswrong/cli": "^0.18.2",
+    "@types/node": "^24.0.0",
+    "prettier": "^3.6.0",
+    "publint": "^0.3.12",
+    "typescript": "^5.9.0",
     "vitest": "^4.0.16"
   }
 }

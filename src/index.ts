@@ -9,13 +9,14 @@ export type {
   BilingualText,
   QuestionPair,
   DimensionQuestions,
+  MultilingualText,
   // Test Quality Metrics types
   ConfidenceLevel,
   DimensionConfidence,
   TestConfidence,
   ConsistencyResult,
   TestConsistency,
-} from './types';
+} from './types.js';
 
 // Questions data
 export {
@@ -29,7 +30,7 @@ export {
   quickTestQuestions,
   QUICK_TEST_TOTAL,
   QUICK_TEST_PER_DIMENSION,
-} from './questions';
+} from './questions.js';
 
 // Scoring functions
 export {
@@ -62,7 +63,16 @@ export {
   checkDimensionConsistency,
   checkTestConsistency,
   getConfidenceLabel,
-} from './scoring';
+} from './scoring.js';
+
+// Locales
+export type { Locale } from './locales.js';
+export {
+  SUPPORTED_LOCALES,
+  PURRJUNG_LOCALES,
+  DEFAULT_LOCALE,
+  getLocalizedText,
+} from './locales.js';
 
 // PurrJung Cat Test - Questions data
 export {
@@ -71,7 +81,7 @@ export {
   sortedPurrjungQuestions,
   PURRJUNG_TOTAL_QUESTIONS,
   PURRJUNG_QUESTIONS_PER_DIMENSION,
-} from './purrjungQuestions';
+} from './purrjungQuestions.js';
 
 // PurrJung Cat Test - Scoring functions
 export {
@@ -84,4 +94,4 @@ export {
   generatePurrjungResult,
   isPurrjungTestComplete,
   getPurrjungDimensionQuestionIds,
-} from './purrjungScoring';
+} from './purrjungScoring.js';

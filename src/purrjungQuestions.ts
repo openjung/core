@@ -1,4 +1,4 @@
-import type { QuestionPair, DimensionQuestions } from './types';
+import type { QuestionPair, DimensionQuestions } from './types.js';
 
 /**
  * PurrJung Cat Personality Test - 16 Questions
@@ -196,7 +196,7 @@ export const purrjungQuestions: QuestionPair[] = [
     id: 8,
     dimension: 'SN',
     title: {
-      en: 'Your cat\'s preferred resting spots are...',
+      en: "Your cat's preferred resting spots are...",
       zh: '你的猫喜欢的休息地点是...',
       ja: 'あなたの猫の好みの休憩場所は...',
       ko: '당신의 고양이가 선호하는 휴식 장소는...',
@@ -273,7 +273,7 @@ export const purrjungQuestions: QuestionPair[] = [
     id: 11,
     dimension: 'TF',
     title: {
-      en: 'Your cat\'s response to verbal praise or encouragement is...',
+      en: "Your cat's response to verbal praise or encouragement is...",
       zh: '你的猫对言语表扬或鼓励的反应是...',
       ja: '言葉による称賛や励ましに対するあなたの猫の反応は...',
       ko: '칭찬이나 격려에 대한 당신의 고양이의 반응은...',
@@ -298,7 +298,7 @@ export const purrjungQuestions: QuestionPair[] = [
     id: 12,
     dimension: 'TF',
     title: {
-      en: 'When you call your cat\'s name, it typically...',
+      en: "When you call your cat's name, it typically...",
       zh: '当你叫你的猫的名字时，它通常...',
       ja: '猫の名前を呼ぶと、通常...',
       ko: '고양이 이름을 부르면, 보통...',
@@ -325,7 +325,7 @@ export const purrjungQuestions: QuestionPair[] = [
     id: 13,
     dimension: 'JP',
     title: {
-      en: 'Your cat\'s daily activity pattern is...',
+      en: "Your cat's daily activity pattern is...",
       zh: '你的猫的日常活动模式是...',
       ja: 'あなたの猫の毎日の活動パターンは...',
       ko: '당신의 고양이의 일상 활동 패턴은...',
@@ -375,7 +375,7 @@ export const purrjungQuestions: QuestionPair[] = [
     id: 15,
     dimension: 'JP',
     title: {
-      en: 'Your cat\'s energy bursts (zoomies) occur...',
+      en: "Your cat's energy bursts (zoomies) occur...",
       zh: '你的猫的能量爆发（疯跑）发生在...',
       ja: 'あなたの猫のエネルギー爆発（ズーミーズ）は...',
       ko: '당신의 고양이의 에너지 폭발(줌미)은...',
@@ -400,7 +400,7 @@ export const purrjungQuestions: QuestionPair[] = [
     id: 16,
     dimension: 'JP',
     title: {
-      en: 'When it\'s time for grooming or nail trimming, your cat...',
+      en: "When it's time for grooming or nail trimming, your cat...",
       zh: '当需要梳毛或剪指甲时，你的猫...',
       ja: 'グルーミングや爪切りの時間になると、あなたの猫は...',
       ko: '그루밍이나 발톱 다듬기 시간이 되면, 당신의 고양이는...',
