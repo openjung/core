@@ -47,8 +47,12 @@ export interface SingleDimensionResult {
   rightPercent: number; // 0-100
 }
 
-// Multilingual text (en is required, others optional for fallback)
-export interface BilingualText {
+/**
+ * Multilingual text. `en` is always present; every other locale is optional so
+ * consumers can carry partial translations of their own content.
+ * Use `getLocalizedText()` to read a locale with English fallback.
+ */
+export interface MultilingualText {
   [locale: string]: string | undefined;
   en: string;
   zh?: string;
@@ -57,13 +61,16 @@ export interface BilingualText {
   'zh-tw'?: string;
 }
 
+/** @deprecated Use {@link MultilingualText}. Kept as an alias for existing imports. */
+export type BilingualText = MultilingualText;
+
 // Question pair (bipolar scale)
 export interface QuestionPair {
   id: number;
   dimension: Dimension;
-  title?: BilingualText; // Optional question prompt to guide users
-  leftTrait: BilingualText;
-  rightTrait: BilingualText;
+  title?: MultilingualText; // Optional question prompt to guide users
+  leftTrait: MultilingualText;
+  rightTrait: MultilingualText;
 }
 
 // Dimension to question IDs mapping

@@ -1,4 +1,21 @@
-import { dimensionQuestions, TOTAL_QUESTIONS, quickTestQuestionIds, QUICK_TEST_TOTAL, QUICK_TEST_PER_DIMENSION } from './questions';
+import {
+  dimensionQuestions,
+  TOTAL_QUESTIONS,
+  quickTestQuestionIds,
+  QUICK_TEST_TOTAL,
+} from './questions.js';
+import {
+  DIMENSIONS,
+  NEUTRAL_ANSWER,
+  hasAllAnswers,
+  poleForScore,
+  scoresToPercentages,
+  scoresToType,
+  sumAnswers,
+  sumDimensions,
+  toRightPercentage,
+  type DimensionPoles,
+} from './scale.js';
 import type {
   TestAnswers,
   DimensionScores,
@@ -11,24 +28,45 @@ import type {
   TestConfidence,
   ConsistencyResult,
   TestConsistency,
-} from './types';
+} from './types.js';
+
+/**
+ * Pole letters for the human OEJTS test.
+ * Low scores (left traits) map to the first letter, high scores (right traits) to the second.
+ *
+ * - EI: E ↔ I
+ * - SN: S ↔ N
+ * - TF: F ↔ T (note the order: low = Feeling, high = Thinking)
+ * - JP: J ↔ P
+ */
+const OEJTS_POLES: DimensionPoles = {
+  EI: ['E', 'I'],
+  SN: ['S', 'N'],
+  TF: ['F', 'T'],
+  JP: ['J', 'P'],
+};
+
+// ============================================
+// Full Test (32 questions, 8 per dimension)
+// ============================================
+
+/** Number of questions per dimension */
+export const DIMENSION_QUESTIONS_COUNT = 8;
+
+/** Score range for one dimension of the full test: 8-40 */
+export const DIMENSION_SCORE_MIN = 8;
+export const DIMENSION_SCORE_MAX = 40;
+/** Midpoint of the 8-40 range; scores above it resolve to the right pole */
+export const DIMENSION_THRESHOLD = 24;
 
 /**
  * Calculate dimension scores from test answers
  * Each dimension has 8 questions scored 1-5
  * Total range per dimension: 8-40
+ * Unanswered questions count as neutral (3).
  */
 export function calculateScores(answers: TestAnswers): DimensionScores {
-  const scores: DimensionScores = { EI: 0, SN: 0, TF: 0, JP: 0 };
-
-  for (const [dimension, questionIds] of Object.entries(dimensionQuestions)) {
-    scores[dimension as keyof DimensionScores] = questionIds.reduce(
-      (sum, qId) => sum + (answers[qId] ?? 3), // Default to neutral (3) if missing
-      0
-    );
-  }
-
-  return scores;
+  return sumDimensions(answers, dimensionQuestions);
 }
 
 /**
@@ -45,14 +83,7 @@ export function calculateScores(answers: TestAnswers): DimensionScores {
  *       Left traits are J-oriented, right traits are P-oriented
  */
 export function determineType(scores: DimensionScores): string {
-  const threshold = 24;
-
-  const e_i = scores.EI > threshold ? 'I' : 'E';
-  const s_n = scores.SN > threshold ? 'N' : 'S';
-  const t_f = scores.TF > threshold ? 'T' : 'F';
-  const j_p = scores.JP > threshold ? 'P' : 'J';
-
-  return `${e_i}${s_n}${t_f}${j_p}`;
+  return scoresToType(scores, DIMENSION_THRESHOLD, OEJTS_POLES);
 }
 
 /**
@@ -60,28 +91,7 @@ export function determineType(scores: DimensionScores): string {
  * Converts raw scores (8-40) to percentages (0-100)
  */
 export function calculatePercentages(scores: DimensionScores): DimensionPercentages {
-  const toRightPercentage = (score: number): number => {
-    // Convert 8-40 range to 0-100
-    // Score 8 = 0% right, Score 40 = 100% right
-    const normalized = ((score - 8) / 32) * 100;
-    return Math.round(normalized);
-  };
-
-  const eiRight = toRightPercentage(scores.EI); // I percentage
-  const snRight = toRightPercentage(scores.SN); // N percentage
-  const tfRight = toRightPercentage(scores.TF); // T percentage
-  const jpRight = toRightPercentage(scores.JP); // P percentage
-
-  return {
-    E: 100 - eiRight,
-    I: eiRight,
-    S: 100 - snRight,
-    N: snRight,
-    F: 100 - tfRight,
-    T: tfRight,
-    J: 100 - jpRight,
-    P: jpRight,
-  };
+  return scoresToPercentages(scores, DIMENSION_SCORE_MIN, DIMENSION_SCORE_MAX, OEJTS_POLES);
 }
 
 /**
@@ -96,15 +106,27 @@ export function generateResult(answers: TestAnswers): TestResult {
 }
 
 /**
- * Validate if all questions are answered
+ * Check whether the expected number of questions has been answered.
+ *
+ * This is a count check only: it does not verify which IDs are present or that
+ * values fall within 1-5. Use `isDimensionTestComplete` for ID-level checks.
  */
-export function isTestComplete(answers: TestAnswers, totalQuestions: number = TOTAL_QUESTIONS): boolean {
+export function isTestComplete(
+  answers: TestAnswers,
+  totalQuestions: number = TOTAL_QUESTIONS
+): boolean {
   return Object.keys(answers).length === totalQuestions;
 }
 
 // ============================================
-// Quick Test Mode Functions (8 questions)
+// Quick Test Mode (8 questions, 2 per dimension)
 // ============================================
+
+/** Score range for one dimension of the quick test: 2-10 */
+const QUICK_SCORE_MIN = 2;
+const QUICK_SCORE_MAX = 10;
+/** Midpoint of the 2-10 range */
+const QUICK_THRESHOLD = 6;
 
 /**
  * Calculate dimension scores from quick test answers
@@ -112,16 +134,7 @@ export function isTestComplete(answers: TestAnswers, totalQuestions: number = TO
  * Total range per dimension: 2-10
  */
 export function calculateQuickScores(answers: TestAnswers): DimensionScores {
-  const scores: DimensionScores = { EI: 0, SN: 0, TF: 0, JP: 0 };
-
-  for (const [dimension, questionIds] of Object.entries(quickTestQuestionIds)) {
-    scores[dimension as keyof DimensionScores] = questionIds.reduce(
-      (sum, qId) => sum + (answers[qId] ?? 3), // Default to neutral (3) if missing
-      0
-    );
-  }
-
-  return scores;
+  return sumDimensions(answers, quickTestQuestionIds);
 }
 
 /**
@@ -129,14 +142,7 @@ export function calculateQuickScores(answers: TestAnswers): DimensionScores {
  * Threshold adjusted for 2-10 range (midpoint = 6)
  */
 export function determineQuickType(scores: DimensionScores): string {
-  const threshold = 6; // Midpoint of 2-10 range
-
-  const e_i = scores.EI > threshold ? 'I' : 'E';
-  const s_n = scores.SN > threshold ? 'N' : 'S';
-  const t_f = scores.TF > threshold ? 'T' : 'F';
-  const j_p = scores.JP > threshold ? 'P' : 'J';
-
-  return `${e_i}${s_n}${t_f}${j_p}`;
+  return scoresToType(scores, QUICK_THRESHOLD, OEJTS_POLES);
 }
 
 /**
@@ -144,28 +150,7 @@ export function determineQuickType(scores: DimensionScores): string {
  * Converts raw scores (2-10) to percentages (0-100)
  */
 export function calculateQuickPercentages(scores: DimensionScores): DimensionPercentages {
-  const toRightPercentage = (score: number): number => {
-    // Convert 2-10 range to 0-100
-    // Score 2 = 0% right, Score 10 = 100% right
-    const normalized = ((score - 2) / 8) * 100;
-    return Math.round(normalized);
-  };
-
-  const eiRight = toRightPercentage(scores.EI); // I percentage
-  const snRight = toRightPercentage(scores.SN); // N percentage
-  const tfRight = toRightPercentage(scores.TF); // T percentage
-  const jpRight = toRightPercentage(scores.JP); // P percentage
-
-  return {
-    E: 100 - eiRight,
-    I: eiRight,
-    S: 100 - snRight,
-    N: snRight,
-    F: 100 - tfRight,
-    T: tfRight,
-    J: 100 - jpRight,
-    P: jpRight,
-  };
+  return scoresToPercentages(scores, QUICK_SCORE_MIN, QUICK_SCORE_MAX, OEJTS_POLES);
 }
 
 /**
@@ -180,34 +165,15 @@ export function generateQuickResult(answers: TestAnswers): TestResult {
 }
 
 /**
- * Validate if all quick test questions are answered
+ * Check whether exactly 8 answers have been recorded (count check only).
  */
 export function isQuickTestComplete(answers: TestAnswers): boolean {
   return Object.keys(answers).length === QUICK_TEST_TOTAL;
 }
 
 // ============================================
-// Single Dimension Test Functions (8 questions)
+// Single Dimension Test (8 questions)
 // ============================================
-
-/** Number of questions per dimension */
-export const DIMENSION_QUESTIONS_COUNT = 8;
-
-/** Score range for single dimension: 8-40 */
-export const DIMENSION_SCORE_MIN = 8;
-export const DIMENSION_SCORE_MAX = 40;
-export const DIMENSION_THRESHOLD = 24; // Midpoint
-
-/**
- * Dimension preference mapping
- * Left preference (low score) -> Right preference (high score)
- */
-const dimensionPreferences: Record<Dimension, { left: string; right: string }> = {
-  EI: { left: 'E', right: 'I' },
-  SN: { left: 'S', right: 'N' },
-  TF: { left: 'F', right: 'T' },
-  JP: { left: 'J', right: 'P' },
-};
 
 /**
  * Calculate single dimension score from test answers
@@ -216,11 +182,7 @@ const dimensionPreferences: Record<Dimension, { left: string; right: string }> =
  * @returns Score in 8-40 range
  */
 export function calculateDimensionScore(answers: TestAnswers, dimension: Dimension): number {
-  const questionIds = dimensionQuestions[dimension];
-  return questionIds.reduce(
-    (sum, qId) => sum + (answers[qId] ?? 3), // Default to neutral (3) if missing
-    0
-  );
+  return sumAnswers(answers, dimensionQuestions[dimension]);
 }
 
 /**
@@ -230,8 +192,7 @@ export function calculateDimensionScore(answers: TestAnswers, dimension: Dimensi
  * @returns Preference letter (E/I, S/N, F/T, J/P)
  */
 export function determineDimensionPreference(score: number, dimension: Dimension): string {
-  const prefs = dimensionPreferences[dimension];
-  return score > DIMENSION_THRESHOLD ? prefs.right : prefs.left;
+  return poleForScore(score, DIMENSION_THRESHOLD, OEJTS_POLES[dimension]);
 }
 
 /**
@@ -240,12 +201,8 @@ export function determineDimensionPreference(score: number, dimension: Dimension
  * @returns Object with left and right percentages (total = 100)
  */
 export function calculateDimensionPercentages(score: number): { left: number; right: number } {
-  // Convert 8-40 range to 0-100 (right percentage)
-  const rightPercent = Math.round(((score - DIMENSION_SCORE_MIN) / (DIMENSION_SCORE_MAX - DIMENSION_SCORE_MIN)) * 100);
-  return {
-    left: 100 - rightPercent,
-    right: rightPercent,
-  };
+  const right = toRightPercentage(score, DIMENSION_SCORE_MIN, DIMENSION_SCORE_MAX);
+  return { left: 100 - right, right };
 }
 
 /**
@@ -254,7 +211,10 @@ export function calculateDimensionPercentages(score: number): { left: number; ri
  * @param dimension - Target dimension
  * @returns SingleDimensionResult with score, preference, and percentages
  */
-export function generateDimensionResult(answers: TestAnswers, dimension: Dimension): SingleDimensionResult {
+export function generateDimensionResult(
+  answers: TestAnswers,
+  dimension: Dimension
+): SingleDimensionResult {
   const score = calculateDimensionScore(answers, dimension);
   const preference = determineDimensionPreference(score, dimension);
   const { left, right } = calculateDimensionPercentages(score);
@@ -275,8 +235,7 @@ export function generateDimensionResult(answers: TestAnswers, dimension: Dimensi
  * @returns True if all 8 questions for the dimension are answered
  */
 export function isDimensionTestComplete(answers: TestAnswers, dimension: Dimension): boolean {
-  const questionIds = dimensionQuestions[dimension];
-  return questionIds.every(qId => answers[qId] !== undefined);
+  return hasAllAnswers(answers, dimensionQuestions[dimension]);
 }
 
 /**
@@ -289,7 +248,7 @@ export function getDimensionQuestionIds(dimension: Dimension): readonly number[]
 }
 
 // ============================================
-// Test Quality Metrics Functions
+// Test Quality Metrics
 // ============================================
 
 /**
@@ -304,6 +263,9 @@ const CONFIDENCE_THRESHOLDS = {
   moderate: 6,
   slight: 2,
 } as const;
+
+/** Largest possible distance from the midpoint (24 → 8 or 24 → 40). */
+const MAX_DISTANCE = DIMENSION_SCORE_MAX - DIMENSION_THRESHOLD;
 
 /**
  * Calculate confidence level from distance to threshold
@@ -323,18 +285,15 @@ export function getConfidenceLevel(distance: number): ConfidenceLevel {
  * @param dimension - The dimension being measured
  * @returns DimensionConfidence with level, distance, and percentage
  */
-export function calculateDimensionConfidence(score: number, dimension: Dimension): DimensionConfidence {
+export function calculateDimensionConfidence(
+  score: number,
+  dimension: Dimension
+): DimensionConfidence {
   const distance = Math.abs(score - DIMENSION_THRESHOLD);
   const level = getConfidenceLevel(distance);
-  // Max distance is 16 (from 24 to 8 or 24 to 40), convert to percentage
-  const percentage = Math.round((distance / 16) * 100);
+  const percentage = Math.round((distance / MAX_DISTANCE) * 100);
 
-  return {
-    dimension,
-    level,
-    distance,
-    percentage,
-  };
+  return { dimension, level, distance, percentage };
 }
 
 /**
@@ -343,27 +302,16 @@ export function calculateDimensionConfidence(score: number, dimension: Dimension
  * @returns TestConfidence with per-dimension confidence and clarity index
  */
 export function calculateTestConfidence(scores: DimensionScores): TestConfidence {
-  const dimensions: Dimension[] = ['EI', 'SN', 'TF', 'JP'];
-  const confidences: Record<string, DimensionConfidence> = {};
+  const EI = calculateDimensionConfidence(scores.EI, 'EI');
+  const SN = calculateDimensionConfidence(scores.SN, 'SN');
+  const TF = calculateDimensionConfidence(scores.TF, 'TF');
+  const JP = calculateDimensionConfidence(scores.JP, 'JP');
 
-  let totalDistance = 0;
-  for (const dim of dimensions) {
-    const confidence = calculateDimensionConfidence(scores[dim], dim);
-    confidences[dim] = confidence;
-    totalDistance += confidence.distance;
-  }
+  // Clarity index: total distance normalized to 0-100 (max = 16 × 4 = 64)
+  const totalDistance = EI.distance + SN.distance + TF.distance + JP.distance;
+  const clarityIndex = Math.round((totalDistance / (MAX_DISTANCE * DIMENSIONS.length)) * 100);
 
-  // Clarity index: average distance normalized to 0-100
-  // Max total distance = 16 * 4 = 64
-  const clarityIndex = Math.round((totalDistance / 64) * 100);
-
-  return {
-    EI: confidences.EI,
-    SN: confidences.SN,
-    TF: confidences.TF,
-    JP: confidences.JP,
-    clarityIndex,
-  };
+  return { EI, SN, TF, JP, clarityIndex };
 }
 
 /**
@@ -373,13 +321,12 @@ export function calculateTestConfidence(scores: DimensionScores): TestConfidence
  * @returns Variance of the 8 answers (0 = all same, higher = more varied)
  */
 function calculateAnswerVariance(answers: TestAnswers, dimension: Dimension): number {
-  const questionIds = dimensionQuestions[dimension];
-  const values = questionIds.map(qId => answers[qId] ?? 3);
+  const values = dimensionQuestions[dimension].map((qId) => answers[qId] ?? NEUTRAL_ANSWER);
 
   if (values.length === 0) return 0;
 
   const mean = values.reduce((a, b) => a + b, 0) / values.length;
-  const squaredDiffs = values.map(v => Math.pow(v - mean, 2));
+  const squaredDiffs = values.map((v) => (v - mean) ** 2);
   return squaredDiffs.reduce((a, b) => a + b, 0) / values.length;
 }
 
@@ -388,21 +335,23 @@ const CONSISTENCY_THRESHOLD = 3;
 
 /**
  * Check consistency of answers within a dimension
- * Flags question pairs where answers differ significantly
+ * Flags adjacent question pairs whose answers differ by 3 or more
  * @param answers - Test answers
  * @param dimension - Target dimension
  * @returns ConsistencyResult with variance and flagged pairs
  */
-export function checkDimensionConsistency(answers: TestAnswers, dimension: Dimension): ConsistencyResult {
+export function checkDimensionConsistency(
+  answers: TestAnswers,
+  dimension: Dimension
+): ConsistencyResult {
   const questionIds = dimensionQuestions[dimension];
   const variance = calculateAnswerVariance(answers, dimension);
   const flaggedPairs: [number, number][] = [];
 
-  // Compare adjacent question pairs within dimension
   for (let i = 0; i < questionIds.length - 1; i++) {
     const q1 = questionIds[i];
     const q2 = questionIds[i + 1];
-    const diff = Math.abs((answers[q1] ?? 3) - (answers[q2] ?? 3));
+    const diff = Math.abs((answers[q1] ?? NEUTRAL_ANSWER) - (answers[q2] ?? NEUTRAL_ANSWER));
     if (diff >= CONSISTENCY_THRESHOLD) {
       flaggedPairs.push([q1, q2]);
     }
@@ -422,26 +371,21 @@ export function checkDimensionConsistency(answers: TestAnswers, dimension: Dimen
  * @returns TestConsistency with per-dimension results and overall status
  */
 export function checkTestConsistency(answers: TestAnswers): TestConsistency {
-  const dimensions: Dimension[] = ['EI', 'SN', 'TF', 'JP'];
-  const results: Record<string, ConsistencyResult> = {};
-  const warnings: string[] = [];
+  const EI = checkDimensionConsistency(answers, 'EI');
+  const SN = checkDimensionConsistency(answers, 'SN');
+  const TF = checkDimensionConsistency(answers, 'TF');
+  const JP = checkDimensionConsistency(answers, 'JP');
 
-  let allConsistent = true;
-  for (const dim of dimensions) {
-    const result = checkDimensionConsistency(answers, dim);
-    results[dim] = result;
-    if (!result.isConsistent) {
-      allConsistent = false;
-      warnings.push(`Inconsistent answers in ${dim} dimension`);
-    }
-  }
+  const warnings = [EI, SN, TF, JP]
+    .filter((result) => !result.isConsistent)
+    .map((result) => `Inconsistent answers in ${result.dimension} dimension`);
 
   return {
-    EI: results.EI,
-    SN: results.SN,
-    TF: results.TF,
-    JP: results.JP,
-    overallConsistent: allConsistent,
+    EI,
+    SN,
+    TF,
+    JP,
+    overallConsistent: warnings.length === 0,
     warnings,
   };
 }
