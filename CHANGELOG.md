@@ -33,7 +33,6 @@ on npm is `@openmbti/core@1.0.1`; everything below is new since then.
 
 ### Fixed
 
-- TF dimension Q2 scoring direction (Skeptical / Wants to believe) now matches the OEJTS loading.
 - Test files are no longer compiled into `dist/` or shipped in the npm tarball.
 - `package.json` `exports` lists `types` first so TypeScript resolves declarations under every module setting.
 
@@ -46,6 +45,10 @@ Published as `@openmbti/core`.
 - OEJTS 1.2 question bank (32 bipolar pairs) in `en`, `zh`, `ja`, `ko`, `zh-tw`.
 - Scoring: dimension sums, type determination, pole percentages, completeness check.
 - GitHub Actions workflow for npm publishing.
+
+### Fixed
+
+- TF dimension Q2 scoring direction (Skeptical / Wants to believe) now matches the OEJTS loading.
 
 [Unreleased]: https://github.com/openjung/core/compare/main...HEAD
 [1.0.1]: https://github.com/openjung/core/commits/main

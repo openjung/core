@@ -10,7 +10,7 @@ Questions, scoring and translations for the **Open Extended Jungian Type Scales*
 - **32-question OEJTS 1.2** with the 8-question quick mode and per-dimension mini tests
 - **Scoring** that is deterministic and documented: raw scores, four-letter type, pole percentages
 - **Quality metrics**: confidence per dimension, profile clarity, answer-consistency flags
-- **44 locales** on every question (5 human-reviewed, 39 AI-drafted; see [TRANSLATIONS.md](TRANSLATIONS.md))
+- **44 locales** on every question (5 original, 39 AI-assisted drafts; see [TRANSLATIONS.md](TRANSLATIONS.md))
 - **PurrJung**, a 16-question companion test for cats, sharing the same result shape
 
 Based on the [OEJTS 1.2](https://openpsychometrics.org/tests/OEJTS/) by Eric Jorgenson / [Open Psychometrics](https://openpsychometrics.org/).
@@ -21,7 +21,7 @@ Based on the [OEJTS 1.2](https://openpsychometrics.org/tests/OEJTS/) by Eric Jor
 npm install @openjung/core
 ```
 
-Requires Node 18+ or any bundler that understands ESM. The package ships `dist/` with declarations and source maps, plus `src/` for readers.
+Requires Node 20+ or any bundler that understands ESM. The package ships `dist/` with declarations and source maps, plus `src/` for readers.
 
 ## Quick start
 

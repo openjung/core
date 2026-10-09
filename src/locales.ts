@@ -3,8 +3,8 @@ import type { MultilingualText } from './types.js';
 /**
  * Locales shipped with the OEJTS question bank (`questions`), in the order they were added.
  *
- * The first five were written and reviewed by people. The remaining 39 are AI-assisted
- * drafts awaiting native-speaker review; see TRANSLATIONS.md for provenance and caveats.
+ * The first five have shipped since 1.0. The remaining 39 are AI-assisted drafts awaiting
+ * native-speaker review; see TRANSLATIONS.md for provenance and caveats.
  */
 export const SUPPORTED_LOCALES = [
   'en',
