@@ -19,17 +19,17 @@ OpenJung is an open-source personality test based on OEJTS (Open Extended Jungia
 
 ```javascript
 // 1. Fetch questions
-const { questions } = await fetch('https://openjung.org/api/questions').then(r => r.json());
+const { questions } = await fetch('https://openjung.org/api/questions').then((r) => r.json());
 
 // 2. Collect user answers (32 questions, values 1-5)
-const answers = { "1": 3, "2": 5, /* ... all 32 */ "32": 4 };
+const answers = { 1: 3, 2: 5, /* ... all 32 */ 32: 4 };
 
 // 3. Calculate result
 const { result } = await fetch('https://openjung.org/api/calculate', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ answers })
-}).then(r => r.json());
+  body: JSON.stringify({ answers }),
+}).then((r) => r.json());
 
 console.log(result.type); // "ENFP"
 ```
@@ -45,6 +45,7 @@ GET /api/questions?locale=en
 ```
 
 **Response:**
+
 ```json
 {
   "totalQuestions": 32,
@@ -73,6 +74,7 @@ POST /api/calculate
 ```
 
 **Response:**
+
 ```json
 {
   "result": {
@@ -120,6 +122,7 @@ Get aggregate test statistics.
 **Scale**: 1-5 Likert (1 = strongly left trait, 5 = strongly right trait)
 
 **Dimensions** (8 questions each):
+
 - **EI**: Extroversion (E) ↔ Introversion (I)
 - **SN**: Sensing (S) ↔ Intuition (N)
 - **TF**: Thinking (T) ↔ Feeling (F)
@@ -128,6 +131,7 @@ Get aggregate test statistics.
 **Score Range**: 8-40 per dimension (8 questions × 1-5 scale)
 
 **Threshold**: 24 (midpoint)
+
 - Score ≤ 24 → left preference (E, S, F, J)
 - Score > 24 → right preference (I, N, T, P)
 
@@ -135,28 +139,29 @@ Get aggregate test statistics.
 
 ## Question Mapping
 
-| Dimension | Question IDs |
-|-----------|--------------|
-| JP | 1, 5, 9, 13, 17, 21, 25, 29 |
-| TF | 2, 6, 10, 14, 18, 22, 26, 30 |
-| EI | 3, 7, 11, 15, 19, 23, 27, 31 |
-| SN | 4, 8, 12, 16, 20, 24, 28, 32 |
+| Dimension | Question IDs                 |
+| --------- | ---------------------------- |
+| JP        | 1, 5, 9, 13, 17, 21, 25, 29  |
+| TF        | 2, 6, 10, 14, 18, 22, 26, 30 |
+| EI        | 3, 7, 11, 15, 19, 23, 27, 31 |
+| SN        | 4, 8, 12, 16, 20, 24, 28, 32 |
 
 ## Localization
 
 44 languages supported. Pass `locale` parameter to endpoints:
+
 - `en` (English), `zh` (Simplified Chinese), `ja` (Japanese), `ko` (Korean)
 - `es` (Spanish), `fr` (French), `de` (German), `pt` (Portuguese)
 - And 36 more...
 
 ## Error Handling
 
-| Error Code | Description |
-|------------|-------------|
-| `INVALID_BODY` | Malformed JSON |
-| `INVALID_PARAMS` | Missing/wrong answers format |
+| Error Code           | Description                   |
+| -------------------- | ----------------------------- |
+| `INVALID_BODY`       | Malformed JSON                |
+| `INVALID_PARAMS`     | Missing/wrong answers format  |
 | `INCOMPLETE_ANSWERS` | Not all 32 questions answered |
-| `CALCULATION_FAILED` | Server error |
+| `CALCULATION_FAILED` | Server error                  |
 
 ## Resources
 

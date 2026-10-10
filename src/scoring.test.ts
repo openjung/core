@@ -23,9 +23,9 @@ import {
   checkDimensionConsistency,
   checkTestConsistency,
   getConfidenceLabel,
-} from './scoring';
-import type { TestAnswers, DimensionScores, Dimension, ConfidenceLevel } from './types';
-import { dimensionQuestions, TOTAL_QUESTIONS } from './questions';
+} from './scoring.js';
+import type { TestAnswers, DimensionScores, Dimension } from './types.js';
+import { dimensionQuestions, TOTAL_QUESTIONS } from './questions.js';
 
 describe('calculateScores', () => {
   it('returns minimum scores (8) when all answers are 1', () => {

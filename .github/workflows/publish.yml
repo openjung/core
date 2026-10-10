@@ -1,49 +1,43 @@
 name: Publish to npm
 
+# Publishes the version in package.json when a GitHub release is published.
+# The release tag must match the package version (v1.2.3 ↔ "version": "1.2.3").
+# Bump the version with `npm version <patch|minor|major>` before tagging; see CONTRIBUTING.md.
+
 on:
   release:
-    types: [created]
+    types: [published]
   workflow_dispatch:
-    inputs:
-      version:
-        description: 'Version bump type (patch, minor, major) or specific version'
-        required: false
-        default: 'patch'
+
+permissions:
+  contents: read
+  id-token: write
 
 jobs:
   publish:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      id-token: write
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
-          node-version: '20'
-          registry-url: 'https://registry.npmjs.org'
+          node-version: 24
+          cache: npm
+          registry-url: https://registry.npmjs.org
 
-      - name: Install dependencies
-        run: npm ci
+      - run: npm ci
 
-      - name: Run tests
-        run: npm test
-
-      - name: Build
-        run: npm run build
-
-      - name: Bump version (manual trigger only)
-        if: github.event_name == 'workflow_dispatch'
+      - name: Check that the release tag matches package.json
+        if: github.event_name == 'release'
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          npm version ${{ github.event.inputs.version }} -m "Release v%s"
-          git push --follow-tags
+          expected="v$(node -p "require('./package.json').version")"
+          if [ "${{ github.event.release.tag_name }}" != "$expected" ]; then
+            echo "Release tag ${{ github.event.release.tag_name }} does not match package version $expected"
+            exit 1
+          fi
 
-      - name: Publish to npm
-        run: npm publish --access public --provenance
+      # prepublishOnly runs clean, typecheck, format check, tests, build and publint.
+      - name: Publish
+        run: npm publish
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

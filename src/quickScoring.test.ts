@@ -5,17 +5,19 @@ import {
   calculateQuickPercentages,
   generateQuickResult,
   isQuickTestComplete,
-} from './scoring';
-import type { TestAnswers, DimensionScores } from './types';
-import { quickTestQuestionIds, QUICK_TEST_TOTAL } from './questions';
+} from './scoring.js';
+import type { TestAnswers, DimensionScores } from './types.js';
+import { quickTestQuestionIds, QUICK_TEST_TOTAL } from './questions.js';
 
 describe('calculateQuickScores', () => {
   it('returns minimum scores (2) when all answers are 1', () => {
     const answers: TestAnswers = {};
     // Quick test uses questions: EI[3,15], SN[24,32], TF[22,14], JP[9,13]
-    Object.values(quickTestQuestionIds).flat().forEach((id) => {
-      answers[id] = 1;
-    });
+    Object.values(quickTestQuestionIds)
+      .flat()
+      .forEach((id) => {
+        answers[id] = 1;
+      });
     const scores = calculateQuickScores(answers);
     expect(scores.EI).toBe(2);
     expect(scores.SN).toBe(2);
@@ -25,9 +27,11 @@ describe('calculateQuickScores', () => {
 
   it('returns maximum scores (10) when all answers are 5', () => {
     const answers: TestAnswers = {};
-    Object.values(quickTestQuestionIds).flat().forEach((id) => {
-      answers[id] = 5;
-    });
+    Object.values(quickTestQuestionIds)
+      .flat()
+      .forEach((id) => {
+        answers[id] = 5;
+      });
     const scores = calculateQuickScores(answers);
     expect(scores.EI).toBe(10);
     expect(scores.SN).toBe(10);
@@ -37,9 +41,11 @@ describe('calculateQuickScores', () => {
 
   it('returns neutral scores (6) when all answers are 3', () => {
     const answers: TestAnswers = {};
-    Object.values(quickTestQuestionIds).flat().forEach((id) => {
-      answers[id] = 3;
-    });
+    Object.values(quickTestQuestionIds)
+      .flat()
+      .forEach((id) => {
+        answers[id] = 3;
+      });
     const scores = calculateQuickScores(answers);
     expect(scores.EI).toBe(6);
     expect(scores.SN).toBe(6);
@@ -77,10 +83,10 @@ describe('calculateQuickScores', () => {
     });
 
     const scores = calculateQuickScores(answers);
-    expect(scores.EI).toBe(2);  // 2 * 1 = 2
+    expect(scores.EI).toBe(2); // 2 * 1 = 2
     expect(scores.SN).toBe(10); // 2 * 5 = 10
-    expect(scores.TF).toBe(4);  // 2 * 2 = 4
-    expect(scores.JP).toBe(8);  // 2 * 4 = 8
+    expect(scores.TF).toBe(4); // 2 * 2 = 4
+    expect(scores.JP).toBe(8); // 2 * 4 = 8
   });
 
   it('only uses quick test question IDs', () => {
@@ -90,9 +96,11 @@ describe('calculateQuickScores', () => {
       answers[i] = 5;
     }
     // Override quick test questions with 1
-    Object.values(quickTestQuestionIds).flat().forEach((id) => {
-      answers[id] = 1;
-    });
+    Object.values(quickTestQuestionIds)
+      .flat()
+      .forEach((id) => {
+        answers[id] = 1;
+      });
 
     const scores = calculateQuickScores(answers);
     // Should only use quick test questions (answered 1)
@@ -214,9 +222,11 @@ describe('calculateQuickPercentages', () => {
 describe('generateQuickResult', () => {
   it('generates complete result with all components', () => {
     const answers: TestAnswers = {};
-    Object.values(quickTestQuestionIds).flat().forEach((id) => {
-      answers[id] = 3;
-    });
+    Object.values(quickTestQuestionIds)
+      .flat()
+      .forEach((id) => {
+        answers[id] = 3;
+      });
     const result = generateQuickResult(answers);
     expect(result).toHaveProperty('type');
     expect(result).toHaveProperty('scores');
@@ -225,9 +235,11 @@ describe('generateQuickResult', () => {
 
   it('type matches scores correctly', () => {
     const answers: TestAnswers = {};
-    Object.values(quickTestQuestionIds).flat().forEach((id) => {
-      answers[id] = 5;
-    });
+    Object.values(quickTestQuestionIds)
+      .flat()
+      .forEach((id) => {
+        answers[id] = 5;
+      });
     const result = generateQuickResult(answers);
     expect(result.type).toBe('INTP');
     expect(result.scores.EI).toBe(10);
@@ -238,9 +250,11 @@ describe('generateQuickResult', () => {
 
   it('percentages match scores correctly', () => {
     const answers: TestAnswers = {};
-    Object.values(quickTestQuestionIds).flat().forEach((id) => {
-      answers[id] = 1;
-    });
+    Object.values(quickTestQuestionIds)
+      .flat()
+      .forEach((id) => {
+        answers[id] = 1;
+      });
     const result = generateQuickResult(answers);
     expect(result.percentages.E).toBe(100);
     expect(result.percentages.I).toBe(0);
@@ -249,33 +263,49 @@ describe('generateQuickResult', () => {
   it('handles real-world ENFP answers', () => {
     // ENFP: E (low EI), N (high SN), F (low TF), P (high JP)
     const answers: TestAnswers = {};
-    quickTestQuestionIds.EI.forEach((id) => { answers[id] = 2; }); // Low = E
-    quickTestQuestionIds.SN.forEach((id) => { answers[id] = 4; }); // High = N
-    quickTestQuestionIds.TF.forEach((id) => { answers[id] = 2; }); // Low = F
-    quickTestQuestionIds.JP.forEach((id) => { answers[id] = 4; }); // High = P
+    quickTestQuestionIds.EI.forEach((id) => {
+      answers[id] = 2;
+    }); // Low = E
+    quickTestQuestionIds.SN.forEach((id) => {
+      answers[id] = 4;
+    }); // High = N
+    quickTestQuestionIds.TF.forEach((id) => {
+      answers[id] = 2;
+    }); // Low = F
+    quickTestQuestionIds.JP.forEach((id) => {
+      answers[id] = 4;
+    }); // High = P
 
     const result = generateQuickResult(answers);
     expect(result.type).toBe('ENFP');
-    expect(result.scores.EI).toBe(4);  // E preference
-    expect(result.scores.SN).toBe(8);  // N preference
-    expect(result.scores.TF).toBe(4);  // F preference
-    expect(result.scores.JP).toBe(8);  // P preference
+    expect(result.scores.EI).toBe(4); // E preference
+    expect(result.scores.SN).toBe(8); // N preference
+    expect(result.scores.TF).toBe(4); // F preference
+    expect(result.scores.JP).toBe(8); // P preference
   });
 
   it('handles real-world ISTJ answers', () => {
     // ISTJ: I (high EI), S (low SN), T (high TF), J (low JP)
     const answers: TestAnswers = {};
-    quickTestQuestionIds.EI.forEach((id) => { answers[id] = 4; }); // High = I
-    quickTestQuestionIds.SN.forEach((id) => { answers[id] = 2; }); // Low = S
-    quickTestQuestionIds.TF.forEach((id) => { answers[id] = 4; }); // High = T
-    quickTestQuestionIds.JP.forEach((id) => { answers[id] = 2; }); // Low = J
+    quickTestQuestionIds.EI.forEach((id) => {
+      answers[id] = 4;
+    }); // High = I
+    quickTestQuestionIds.SN.forEach((id) => {
+      answers[id] = 2;
+    }); // Low = S
+    quickTestQuestionIds.TF.forEach((id) => {
+      answers[id] = 4;
+    }); // High = T
+    quickTestQuestionIds.JP.forEach((id) => {
+      answers[id] = 2;
+    }); // Low = J
 
     const result = generateQuickResult(answers);
     expect(result.type).toBe('ISTJ');
-    expect(result.scores.EI).toBe(8);  // I preference
-    expect(result.scores.SN).toBe(4);  // S preference
-    expect(result.scores.TF).toBe(8);  // T preference
-    expect(result.scores.JP).toBe(4);  // J preference
+    expect(result.scores.EI).toBe(8); // I preference
+    expect(result.scores.SN).toBe(4); // S preference
+    expect(result.scores.TF).toBe(8); // T preference
+    expect(result.scores.JP).toBe(4); // J preference
   });
 });
 
@@ -291,9 +321,11 @@ describe('isQuickTestComplete', () => {
 
   it('returns true for exactly 8 answers', () => {
     const answers: TestAnswers = {};
-    Object.values(quickTestQuestionIds).flat().forEach((id) => {
-      answers[id] = 3;
-    });
+    Object.values(quickTestQuestionIds)
+      .flat()
+      .forEach((id) => {
+        answers[id] = 3;
+      });
     expect(isQuickTestComplete(answers)).toBe(true);
     expect(Object.keys(answers).length).toBe(QUICK_TEST_TOTAL);
   });

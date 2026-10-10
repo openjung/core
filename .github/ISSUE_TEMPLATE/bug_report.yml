@@ -1,0 +1,31 @@
+name: Bug report
+description: A function returns the wrong result, a type is wrong, or the package fails to load.
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What did you call, what did you get, and what did you expect?
+      placeholder: |
+        generateResult({ ... }) returned type "ENFP" but the EI score was 24, which should be E.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Minimal reproduction
+      description: A snippet we can paste into a test. Please include the answers object.
+      render: ts
+  - type: input
+    id: version
+    attributes:
+      label: Package version
+      placeholder: '@openjung/core@1.0.1, or a commit SHA'
+    validations:
+      required: true
+  - type: input
+    id: runtime
+    attributes:
+      label: Runtime
+      placeholder: Node 24 / Vite 7 / Cloudflare Workers / React Native

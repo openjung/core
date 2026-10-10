@@ -1,4 +1,19 @@
+# Dependencies
 node_modules/
+
+# Build output
 dist/
+coverage/
+*.tgz
+
+# Logs
 *.log
+npm-debug.log*
+
+# OS / editor
 .DS_Store
+.idea/
+.vscode/
+
+# Local-only tool state
+.claude/settings.local.json

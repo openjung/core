@@ -1,5 +1,12 @@
-import { purrjungDimensionQuestions, PURRJUNG_TOTAL_QUESTIONS, PURRJUNG_QUESTIONS_PER_DIMENSION } from './purrjungQuestions';
-import type { TestAnswers, DimensionScores, DimensionPercentages, TestResult } from './types';
+import { purrjungDimensionQuestions, PURRJUNG_TOTAL_QUESTIONS } from './purrjungQuestions.js';
+import { scoresToPercentages, scoresToType, sumDimensions, type DimensionPoles } from './scale.js';
+import type {
+  TestAnswers,
+  DimensionScores,
+  DimensionPercentages,
+  TestResult,
+  Dimension,
+} from './types.js';
 
 /**
  * PurrJung Cat Personality Test Scoring
@@ -7,40 +14,41 @@ import type { TestAnswers, DimensionScores, DimensionPercentages, TestResult } f
  * Each dimension has 4 questions scored 1-5
  * Total range per dimension: 4-20
  *
- * Dimension scoring direction (same as human OEJTS):
+ * Dimension scoring direction:
  * - EI: Low (4-12) = Social (E), High (13-20) = Solitary (I)
  * - SN: Low (4-12) = Routine (S), High (13-20) = Novelty (N)
  * - TF: Low (4-12) = Independent (T), High (13-20) = Bonded (F)
  * - JP: Low (4-12) = Structured (J), High (13-20) = Spontaneous (P)
+ *
+ * Note that TF runs T → F here, the opposite of the human OEJTS test (F → T).
  */
 
 // Score range constants
-export const PURRJUNG_SCORE_MIN = 4;  // 4 questions × 1 = 4
+export const PURRJUNG_SCORE_MIN = 4; // 4 questions × 1 = 4
 export const PURRJUNG_SCORE_MAX = 20; // 4 questions × 5 = 20
 export const PURRJUNG_THRESHOLD = 12; // Midpoint of 4-20 range
+
+/** Pole letters: `[low score, high score]` per dimension. */
+const PURRJUNG_POLES: DimensionPoles = {
+  EI: ['E', 'I'], // Social ↔ Solitary
+  SN: ['S', 'N'], // Routine ↔ Novelty
+  TF: ['T', 'F'], // Independent ↔ Bonded
+  JP: ['J', 'P'], // Structured ↔ Spontaneous
+};
 
 /**
  * Calculate dimension scores from PurrJung test answers
  * Each dimension has 4 questions scored 1-5
  * Total range per dimension: 4-20
+ * Unanswered questions count as neutral (3).
  */
 export function calculatePurrjungScores(answers: TestAnswers): DimensionScores {
-  const scores: DimensionScores = { EI: 0, SN: 0, TF: 0, JP: 0 };
-
-  for (const [dimension, questionIds] of Object.entries(purrjungDimensionQuestions)) {
-    scores[dimension as keyof DimensionScores] = questionIds.reduce(
-      (sum, qId) => sum + (answers[qId] ?? 3), // Default to neutral (3) if missing
-      0
-    );
-  }
-
-  return scores;
+  return sumDimensions(answers, purrjungDimensionQuestions);
 }
 
 /**
  * Determine cat personality type from dimension scores
  *
- * Scoring direction matches human OEJTS:
  * - EI: Low = E (Social), High = I (Solitary)
  * - SN: Low = S (Routine), High = N (Novelty)
  * - TF: Low = T (Independent), High = F (Bonded)
@@ -49,12 +57,7 @@ export function calculatePurrjungScores(answers: TestAnswers): DimensionScores {
  * Threshold: 12 (midpoint of 4-20 range)
  */
 export function determinePurrjungType(scores: DimensionScores): string {
-  const e_i = scores.EI > PURRJUNG_THRESHOLD ? 'I' : 'E';
-  const s_n = scores.SN > PURRJUNG_THRESHOLD ? 'N' : 'S';
-  const t_f = scores.TF > PURRJUNG_THRESHOLD ? 'F' : 'T';
-  const j_p = scores.JP > PURRJUNG_THRESHOLD ? 'P' : 'J';
-
-  return `${e_i}${s_n}${t_f}${j_p}`;
+  return scoresToType(scores, PURRJUNG_THRESHOLD, PURRJUNG_POLES);
 }
 
 /**
@@ -62,28 +65,7 @@ export function determinePurrjungType(scores: DimensionScores): string {
  * Converts raw scores (4-20) to percentages (0-100)
  */
 export function calculatePurrjungPercentages(scores: DimensionScores): DimensionPercentages {
-  const toRightPercentage = (score: number): number => {
-    // Convert 4-20 range to 0-100
-    // Score 4 = 0% right, Score 20 = 100% right
-    const normalized = ((score - PURRJUNG_SCORE_MIN) / (PURRJUNG_SCORE_MAX - PURRJUNG_SCORE_MIN)) * 100;
-    return Math.round(normalized);
-  };
-
-  const eiRight = toRightPercentage(scores.EI); // I (Solitary) percentage
-  const snRight = toRightPercentage(scores.SN); // N (Novelty) percentage
-  const tfRight = toRightPercentage(scores.TF); // F (Bonded) percentage
-  const jpRight = toRightPercentage(scores.JP); // P (Spontaneous) percentage
-
-  return {
-    E: 100 - eiRight,  // Social
-    I: eiRight,        // Solitary
-    S: 100 - snRight,  // Routine
-    N: snRight,        // Novelty
-    T: 100 - tfRight,  // Independent
-    F: tfRight,        // Bonded
-    J: 100 - jpRight,  // Structured
-    P: jpRight,        // Spontaneous
-  };
+  return scoresToPercentages(scores, PURRJUNG_SCORE_MIN, PURRJUNG_SCORE_MAX, PURRJUNG_POLES);
 }
 
 /**
@@ -98,7 +80,7 @@ export function generatePurrjungResult(answers: TestAnswers): TestResult {
 }
 
 /**
- * Validate if all PurrJung test questions are answered
+ * Check whether exactly 16 answers have been recorded (count check only).
  */
 export function isPurrjungTestComplete(answers: TestAnswers): boolean {
   return Object.keys(answers).length === PURRJUNG_TOTAL_QUESTIONS;
@@ -107,6 +89,6 @@ export function isPurrjungTestComplete(answers: TestAnswers): boolean {
 /**
  * Get the question IDs for a specific dimension
  */
-export function getPurrjungDimensionQuestionIds(dimension: keyof DimensionScores): readonly number[] {
+export function getPurrjungDimensionQuestionIds(dimension: Dimension): readonly number[] {
   return purrjungDimensionQuestions[dimension];
 }
